@@ -1,0 +1,304 @@
+---
+title: "Differential expression analysis of kidney scRNA-seq data using LMM and NEBULA"
+author: "Changjiang Xu"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  pdf_document: 
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+  html_document: 
+    keep_tex: yes
+    toc: yes
+  html_notebook: default
+  word_document: default
+abstract: " "
+header-includes: \usepackage{xcolor, colortbl, rotating, graphicx, caption, subcaption}
+link-citations: yes
+---
+
+<!--comment
+Loading libraries
+Setting work directories
+-->
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Kidney data 
+
+The decontaminated raw counts kidney data shared by the author
+
+```{r include = TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Matrix)
+library(Seurat)
+
+datafile <- "data/Kidney_raw_counts_decontaminated.rds"
+dat <- readRDS(file = datafile)
+dat
+```
+
+## The decontaminated raw counts
+
+```{r include = TRUE}
+counts <- GetAssayData(dat, layer = 'counts', assay = 'RNA')
+dim(counts)
+i <- 1
+table(counts[i,])
+table(round(counts[i,]))
+```
+
+## Meta data
+
+```{r include = TRUE}
+coldata <- dat@meta.data
+dim(coldata)
+#head(coldata)
+all(rownames(coldata) == colnames(counts))
+
+table(coldata$sampleID)
+table(coldata$sex)
+table(coldata$Cell_Types_Broad)
+
+all(colnames(counts) == rownames(coldata))
+
+```
+
+## Filtering cells
+
+```{r include = TRUE}
+dim(counts)
+##number of features
+nFeature <- colSums(counts > 0)
+minnFeature <- 100 
+##library size
+libsize <- colSums(counts)
+minlibsize <- 2^9
+maxlibsize <- 2^16
+##number of cells in a cell-type (cluster)
+nCellsType <- table(coldata$Cell_Types_Broad)
+minnCellsType <- 20
+
+##filtering
+j <- (nFeature >= minnFeature) & (libsize >= minlibsize) & (libsize <= maxlibsize)
+sum(j)
+
+##remove "Podocyte"
+j <- j & (coldata$Cell_Types_Broad %in% names(nCellsType)[nCellsType >= minnCellsType])
+sum(j)
+
+counts <- counts[, j]
+coldata <- coldata[j, ]
+rm(j)
+
+all(colnames(counts) == rownames(coldata))
+dim(counts)
+dim(coldata)
+
+```
+
+## Filtering genes
+
+```{r include = TRUE}
+##(1) number of celss
+#nCells <- rowSums(counts > 0)
+nCells <- rowSums(counts >= 1)
+#hist(log2(nCells))
+minCells <- 2^4 
+
+##(2) number of cells in a group_id (sex)
+nCellsgrp <- do.call(cbind, 
+		tapply(1:ncol(counts), as.factor(coldata$sex), 
+		function(j) rowSums(counts[, j, drop = F] >= 1))
+		#function(j) rowSums(counts[, j, drop = F] > 0))
+		)
+head(nCellsgrp)
+
+minCellsgrp <- 10 
+
+##(3) number of counts
+nCounts <- rowSums(counts)
+#hist(log2(nCounts)) 
+maxCounts <- 2^20
+minCounts <- 2^6
+
+##(4) nebula filtering:
+##Filtering out low-expressed genes can be specified by cpc=0.005. 
+##cpc, counts per cell, the ratio between the total count of the gene and the number of cells.
+
+cpc <- rowSums(counts)/ncol(counts)
+
+##Filtering
+minCells <- 16 
+minCellsgrp <- 10 
+minCounts <- 2^6
+maxCounts <- 2^20
+mincpc <- 0.005
+
+index <- (nCells >= minCells) & (rowSums(nCellsgrp >= minCellsgrp) >= ncol(nCellsgrp))
+sum(index)
+index <- index & (nCounts >= minCounts)
+sum(index)
+index <- index & (cpc > mincpc)
+sum(index)
+
+counts <- counts[index, ] 
+counts <- round(counts)
+
+dim(counts)
+rm(index, dat)
+
+```
+
+
+# DE analyses using lmmfit and nebula
+
+## DE analysis results 
+
+```{r include = TRUE}
+##Load the results of DE analysis by lmmfit:
+load("data/kidney-counts-lmmfit.RData")
+
+##running time
+rtlmm
+
+##t-values
+tvlmm <- t(fit$t)
+
+##p-values
+pvlmm <- t(fit$p)
+
+dim(pvlmm)
+#head(pvlmm)
+sum(apply(is.na(pvlmm), 1, any))
+
+```
+
+```{r include = TRUE}
+##Load the results of DE analysis by nebula:
+load("data/kidney-counts-nebula.RData")
+
+##running time
+rtnebula
+rtnebula[[1]]/rtlmm[[1]]
+
+##convergence
+table(negbn$convergence)
+ 
+##summary of nebula analysis  
+st <- negbn$summary
+rownames(st) <- st$gene
+dim(st)
+#head(st)
+
+any(is.na(st))
+sum(is.na(st))
+#[1] 38184
+
+##fixed effects
+b <- as.matrix(st[, grep("logFC_", colnames(st))])
+##se
+se <- as.matrix(st[, grep("se_", colnames(st))])
+##p-values
+pv <- as.matrix(st[, grep("p_", colnames(st))])
+##t-values
+tv <- b/se
+
+range(pv - 2*pnorm(-abs(tv)), na.rm = T)
+
+```
+
+## Comparisons of DE analysis results 
+
+### Number of DE genes for male vs female within cell-types
+
+```{r include = TRUE}
+all(colnames(pvlmm) == gsub("p_", "", colnames(pv)))
+j <- grep("Male", colnames(pv))
+fdrlmm <- apply(pvlmm[, j], 2, p.adjust, method = "fdr")
+fdrneb <- apply(pv[, j], 2, p.adjust, method = "fdr")
+
+fdrcut <- 0.01
+ng <- rbind(lmmfit = colSums(fdrlmm < fdrcut, na.rm = T),
+	nebula = colSums(fdrneb < fdrcut, na.rm = T))
+o <- order(ng["lmmfit", ], decreasing = T)
+ng <- ng[, o]
+
+bp <- barplot(ng, beside = T, axes = T, xaxt = "n", col = c("red", "blue"), border = NA,
+	ylim = c(0, 1.2*max(ng)), ylab = paste0("Number of DE genes with FDR < ", fdrcut), cex.lab = 0.8)
+text(colMeans(bp), par("usr")[3], labels = colnames(ng), srt = 45, 
+     adj = c(1.1, 1.1), xpd = TRUE, cex = 0.7)
+legend("topright", rownames(ng), col = c("red", "blue"), pch = 15, bty = "n")
+
+```
+
+### Histograms of p-values for male vs female within cell-types
+
+```{r include = TRUE}
+##Histograms of p-values
+
+par(mfrow = c(2, 1), mar = c(5.1, 4.1, 1.1, 2.1))
+j <- grep("Male", colnames(tv))
+hist(as.matrix(pvlmm[, j]), xlab = "lmmfit p-values for Male vs Female within cell-types", main = NULL)
+hist(as.matrix(pv[, j]), xlab = "nebula p-values for Male vs Female within cell-types", main = NULL)
+
+## Histograms of lmmfit p-values for each cell-type
+index <- grep(":Male", colnames(pvlmm))
+length(index)
+par(mfrow = c(6, 3), mar = c(2.1,2.1,2.1,1.1))
+for (j in index[o]){
+  nm <- gsub("p", "+", gsub("_pvalue", "", colnames(pvlmm)[j]))
+  hist(pvlmm[,j], xlab = "lmmfit p-values", main = nm, cex.main = 0.9, cex.axis = 0.8)
+  }
+
+
+## Histograms of nebula p-values for each cell-type
+index <- grep(":Male", colnames(pv))
+par(mfrow = c(6, 3), mar = c(2.1,2.1,2.1,1.1))
+for (j in index[o]){
+  nm <- gsub("p", "+", gsub("p_", "", colnames(pv)[j]))
+  hist(pv[,j], xlab = "nebula p-values", main = nm, cex.main = 0.9, cex.axis = 0.8)
+  }
+
+```
+
+### t-values for male vs female within cell-types
+
+```{r include = TRUE}
+##all t-values except intercept
+#j <- 2:ncol(tv)
+#plot(as.matrix(tvlmm[, j]), as.matrix(tv[, j]),
+#    xlab = "lmmfit t-values", ylab = "nebula t-values", cex = 0.6)
+#abline(0, 1, col = "gray")
+
+##Male vs Female
+j <- grep("Male", colnames(tv))
+plot(as.matrix(tvlmm[, j]), as.matrix(tv[, j]),
+     xlab = "lmmfit t-values", ylab = "nebula t-values", cex = 0.6)
+abline(0, 1, col = "gray")
+
+
+##t-values for each cell-type
+index <- grep("Male", colnames(pv))
+length(index)
+nc <- round(sqrt(length(index)))
+nr <- ceiling(length(index)/nc)
+par(mfrow = c(nr, nc), mar = c(2.1,2.1,1.1,1.1))
+plot(0,0, type = "n", axes = F, xaxt = "n", yaxt = "n", xlab = NA, ylab = NA)
+text(0, 0, "t-values\nnebula vs lmmfit", cex = 1.2)
+for (j in index){
+  nm <- gsub("p", "+", gsub("_t", "", colnames(tvlmm)[j]))
+  plot(tvlmm[,j], tv[,j], cex = 0.6, xlab = NA, ylab = NA, main = nm, cex.main = 0.8, cex.axis = 0.8)
+  abline(0,1)
+}
+
+```
+
+# Discussions
+  
+* nebula has less DE genes than lmmfit.
+* nebula deflated p-values.
+* lmmfit inflated p-values. 

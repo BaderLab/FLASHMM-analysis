@@ -1,0 +1,929 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newlength{\cslentryspacingunit} % times entry-spacing
+\setlength{\cslentryspacingunit}{\parskip}
+\newenvironment{CSLReferences}[2] % #1 hanging-ident, #2 entry spacing
+ {% don't indent paragraphs
+  \setlength{\parindent}{0pt}
+  % turn on hanging indent if param 1 is 1
+  \ifodd #1
+  \let\oldpar\par
+  \def\par{\hangindent=\cslhangindent\oldpar}
+  \fi
+  % set entry spacing
+  \setlength{\parskip}{#2\cslentryspacingunit}
+ }%
+ {}
+\usepackage{calc}
+\newcommand{\CSLBlock}[1]{#1\hfill\break}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{#1}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{#1}\break}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+\usepackage{xcolor, colortbl, rotating, tikz, graphicx, caption, subcaption}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Supplemental Materials},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Supplemental Materials}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+\hypertarget{linear-mixed-effects-models}{%
+\section{Linear mixed-effects
+models}\label{linear-mixed-effects-models}}
+
+A linear mixed-effects model (LMM) is an extension of general linear
+model, which contains both fixed effects and random effects as expressed
+below (\protect\hyperlink{ref-Searle2006}{Searle, Casella, and McCulloch
+2006}) \begin{equation} \label{lmm}
+y = X\beta + Zb + \epsilon,
+\end{equation} where \(y\) is an \(n\times 1\) vector of observations,
+\(X\) is an \(n\times p\) design matrix for fixed effects \(\beta\),
+\(Z\) is an \(n\times q\) design matrix for random effects \(b\), and
+\(\epsilon\) is an \(n\times 1\) vector of residual errors. The term of
+random effects may be a combination of various effects \[
+Zb = Z_1 b_1 + \cdots + Z_K b_K,
+\] where \(Z=[Z_1,\ldots,Z_K]\), \(b=[b^T_1,\ldots,b^T_K]^T\), \(K\) is
+the number of the various random effects occurring in the data, and
+\(Z_i\) is an \(n\times q_i\) matrix. The superscript \(T\) denotes a
+transpose of vector or matrix. The basic assumptions are as follows:
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  The design matrix \(X\) is of full rank, satisfying conditions of
+  estimability for the parameters.
+\item
+  The random vectors \(b_i\) and \(\epsilon\) are independent and follow
+  a normal distribution, \(b_i \sim N(\mathbf{0}, \sigma^2_i I_{q_i})\)
+  and \(\epsilon \sim N(\mathbf{0}, \sigma^2I_n)\), where \(\sigma^2_i\)
+  and \(\sigma^2\) are unknown parameters, called variance components,
+  \(\mathbf{0}\) is a vector or matrix of zero elements, and \(I_n\) is
+  an \(n\times n\) identity matrix.
+\end{enumerate}
+
+Hartley and Rao (\protect\hyperlink{ref-HartleyRao1967}{1967}) specified
+the LMM \eqref{lmm} as mixed analysis of variance (ANOVA) models.
+Harville (\protect\hyperlink{ref-Harville1977}{1977}) introduced the
+general linear mixed-effects models with covariance matrices
+\(Cov(b) = D\) and \(Cov(\epsilon) = R\) involving unobservable
+parameters. Laird and Ware (\protect\hyperlink{ref-Laird1982}{1982})
+described the linear mixed-effects models for longitudinal data,
+repeated measures data, or grouped data.
+
+The random effects reflect variations between groups and correlations
+within groups. Suppose \(Cov(b) = \sigma_b^2I_q\). Then the variance of
+the \(i\)th observation and the correlation between two observations
+\(i\) and \(j\) are \[Var(y_i) = \sigma^2 + \sigma_b^2z_i^Tz_i,\] \[
+ Cor(y_i, y_j) = \frac{\sigma_b^2z_i^Tz_j}{(\sigma^2 + \sigma_b^2z_i^Tz_i)^{1/2}(\sigma^2 + \sigma_b^2z_j^Tz_j)^{1/2}},
+\] where \(z_i\) is the \(i\)th row of \(Z\) corresponding to the
+\(i\)th observation. If two observations \(i\) and \(j\) come from
+different subjects, usually \(z_i^Tz_i \ne z_j^Tz_j\) and then
+\(Var(y_i)\ne Var(y_j)\), that is, the variations between subjects are
+various. If the two observations come from same subject, usually
+\(z_i = z_j\) and then \(Cor(y_i, y_j)>0\), that is, the two
+observations within a subject are correlated.
+
+\hypertarget{estimation-and-inference}{%
+\subsection{Estimation and inference}\label{estimation-and-inference}}
+
+Hartley and Rao (\protect\hyperlink{ref-HartleyRao1967}{1967}) developed
+maximum likelihood (ML) method for estimation of the unknown fixed
+effects and variance components in the linear mixed-effects models. The
+ML method estimates all parameters of fixed effects and variance
+components together. Patterson and Thompson
+(\protect\hyperlink{ref-PattersonThompson1971}{1971}) proposed a
+modified maximum likelihood procedure which partitions the data into two
+mutually uncorrelated parts, one being free of the fixed effects used
+for estimating variance components, called restricted maximum likelihood
+(REML) estimators. The REML estimator is unbiased. The MLE of variance
+components is biased in general. The estimates of fixed effects are
+identical for both methods.
+
+\hypertarget{maximum-likelihood}{%
+\subsubsection{Maximum likelihood}\label{maximum-likelihood}}
+
+Assume that random vectors \(b_i\) and \(\epsilon\) have a normal
+distribution, \(b_i \sim N(\mathbf{0}, \sigma^2_i I_{q_i})\) and
+\(\epsilon \sim N(\mathbf{0}, \sigma^2I_n)\). Then
+\(y \sim N(X\beta, V_{\theta})\) has a probability density function
+(pdf)
+\[f(y|\beta, \theta) = \frac{1}{\sqrt{(2\pi)^n\mathrm{det}(V_{\theta})}} \exp[-\frac{1}{2}(y-X\beta)^TV_{\theta}^{-1}(y-X\beta)],
+\] where
+\[\theta = [\theta_0, \theta_1, \ldots, \theta_K]^T = [\sigma^2,\sigma^2_1,\ldots,\sigma^2_K]^T,\]
+\[V_{\theta} = \sigma^2 I_n + \sigma^2_1 Z_1Z_1^T + \ldots + \sigma^2_K Z_KZ_K^T.\]
+
+The maximum likelihood estimation (MLE) is obtained by maximizing the
+log-likelihood \begin{equation}\label{logl}
+l(\beta, \theta) = \log f(y|\beta,\theta) = -\frac{1}{2}n\log 2\pi - \frac{1}{2}\log\det(V_{\theta}) - \frac{1}{2}(y-X\beta)^TV_{\theta} ^{-1}(y-X\beta).
+\end{equation} The first derivatives of the log-likelihood are
+\begin{equation}\label{mleS} 
+\left\{
+\begin{array}{l}
+\frac{\partial l}{\partial\beta} = X^TV_{\theta}^{-1}y - X^TV_{\theta}^{-1}X\beta,\\
+\frac{\partial l}{\partial\theta_i} = -\frac{1}{2}tr(V_{\theta}^{-1}V_i) + \frac{1}{2}(y-X\beta)^TV_{\theta} ^{-1}V_iV_{\theta} ^{-1}(y-X\beta), ~i=0, \ldots, K,
+\end{array} \right.
+\end{equation} where \(V_i = Z_iZ_i^T\) and \(Z_0 = I_n\). By equating
+the first derivatives to zero, we have the MLE equations: \begin{align} 
+&X^TV_{\theta} ^{-1}X\beta = X^TV_{\theta}^{-1}y,\label{eqb}\\
+&tr(V_{\theta}^{-1}V_i) = y^TR_{\theta}V_iR_{\theta}y, ~i = 0,\ldots, K,\label{eqv}
+\end{align} where \[
+R_{\theta} = V_{\theta}^{-1} - V_{\theta}^{-1}X(X^TV_{\theta}^{-1}X)^{-1}X^TV_{\theta}^{-1}.
+\] With \(\theta\) given, from \eqref{eqb}, we have the MLE of \(\beta\)
+and the covariance matrix of the MLE: \begin{equation}\label{mleb}
+\hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,
+\end{equation} \[
+var(\hat\beta) = (X^TV_{\theta}^{-1}X)^{-1}.
+\] From \eqref{eqb} and \eqref{eqv}, \[
+\sum_{i=0}^K \sigma^2_i tr(V_{\theta}^{-1}V_i) = \sum_{i=0}^K \sigma^2_i (y-X\beta)^TV_{\theta} ^{-1}V_iV_{\theta} ^{-1}(y-X\beta).
+\] Then \[
+\sigma^2 = \frac{1}{n}(y-X\beta)^TV_{\gamma} ^{-1}(y-X\beta),
+\] where \[
+V_{\gamma} = I_n + \gamma_1 Z_1Z_1^T + \ldots + \gamma_K Z_KZ_K^T,
+\] \[
+\gamma_i = \frac{\sigma^2_i}{\sigma^2}, ~i = 1, \ldots, K.
+\]
+
+The information matrix is given by the second derivatives of
+\(l(\beta, \theta)\) \begin{equation}\label{mleH} 
+\left\{
+\begin{array}{l}
+\frac{\partial^2l}{\partial\beta\partial\beta^T} = - X^TV_{\theta} ^{-1}X\\
+\frac{\partial^2l}{\partial\beta\partial\theta_i} = - X^TV_{\theta} ^{-1}V_iV_{\theta}^{-1}(y-X\beta)\\
+\frac{\partial^2l}{\partial\theta_i\partial\theta_j} = \frac{1}{2}tr(V_{\theta}^{-1}V_iV_{\theta}^{-1}V_j) - (y-X\beta)^TV_{\theta} ^{-1}V_iV_{\theta} ^{-1}V_jV_{\theta}^{-1}(y-X\beta)
+\end{array} \right.
+\end{equation} Using \(E(y-X\beta) = \mathbf{0}\) and
+\(E[(y-X\beta)^TA(y-X\beta)] = tr(AV_{\theta})\), we have Fisher
+information matrix: \begin{equation}\label{mleI}
+I(\beta, \theta) = 
+-\begin{bmatrix} 
+E(\frac{\partial^2l}{\partial\beta\partial\beta^T}) & E(\frac{\partial^2l}{\partial\beta\partial\theta^T})\\
+E(\frac{\partial^2l}{\partial\theta\partial\beta^T}) & E(\frac{\partial^2l}{\partial\theta\partial\theta^T})
+\end{bmatrix}=
+\begin{bmatrix} 
+var(\hat\beta)^{-1} & \mathbf{0}\\
+\mathbf{0} & I(\theta)
+\end{bmatrix},
+\end{equation} where \[
+var(\hat\beta) = (X^TV_{\theta}^{-1}X)^{-1},
+\] \[
+I(\theta) = -E\Big(\frac{\partial^2l}{\partial\theta\partial\theta^T}\Big) 
+= \big\{\frac{1}{2}tr(V_{\theta}^{-1}V_iV_{\theta}^{-1}V_j) \big\}_{0\leq i,j\leq K}.
+\] The Fisher information matrix may also be written as \[
+I(\beta, \theta) = 
+E\Bigg[
+\begin{pmatrix}
+\frac{\partial l}{\partial\beta}\\
+\frac{\partial l}{\partial\theta}
+\end{pmatrix}
+\begin{pmatrix}
+\frac{\partial l}{\partial\beta}\\
+\frac{\partial l}{\partial\theta}
+\end{pmatrix}^T\Bigg],
+\] which is a positive semidefinite matrix.
+
+\hypertarget{restricted-maximum-likelihood}{%
+\subsubsection{Restricted maximum
+likelihood}\label{restricted-maximum-likelihood}}
+
+Let \(M\) be an \(n\times (n-p)\) full column rank matrix such that
+\(M^TX = \mathbf{0}\), and \(L = V_{\theta}^{-1}X\), an \(n\times p\)
+full column rank matrix. Then the data y can be partitioned into two
+parts: \(z = M^Ty\) and \(u = L^Ty\). The data \(z\) and \(u\) are
+uncorrelated since \(Cov(z, u) = M^TV_{\theta}L = M^TX = \mathbf{0}\).
+From \eqref{lmm},
+\[z = M^TZb + M^T\epsilon \sim N(\mathbf{0}, M^TV_{\theta}M).\] The
+transformed data, \(z\), does not contain the fixed effects \(\beta\).
+Based on the log-likelihood function of \(z\),
+\[l_R(\theta) = -\frac{1}{2}(n-p)\log 2\pi - \frac{1}{2}\log\det(M^TV_{\theta}M) - \frac{1}{2}y^TM(M^TV_{\theta}M)^{-1}M^Ty,\]
+from the ML equations \eqref{eqv}, we have the restricted maximum
+likelihood (REML) equations: \begin{equation}\label{remleqz}
+tr[(M^TV_{\theta}M)^{-1}M^TV_iM] = y^TM(M^TV_{\theta}M)^{-1}M^TV_iM(M^TV_{\theta}M)^{-1}M^Ty, ~i = 0,\ldots, K.
+\end{equation} The REML equations can be further simplified. Let
+\(P_A = A(A^TA)^{-1}A^T\) be the projection matrix for a full column
+rank matrix \(A\). It is readily verified based on \(M^TX = \mathbf{0}\)
+and both \(X\) and \(M\) are of full rank that, for an \(n \times n\)
+positive definite matrix \(V\), \[P_{V^{1/2}M} = I_n - P_{V^{-1/2}X},\]
+that is, \begin{equation}\label{matrixeq}
+M(M^TVM)^{-1}M^T = V^{-1} - V^{-1}X(X^TV^{-1}X)^{-1}X^TV^{-1}.
+\end{equation} With \eqref{matrixeq}, the REML equations \eqref{remleqz}
+reduces to \begin{equation}\label{remleq}
+tr(R_{\theta}V_i) = y^TR_{\theta}V_iR_{\theta}y, ~i = 0,\ldots, K,
+\end{equation} where \[
+R_{\theta} = V_{\theta}^{-1} - V_{\theta}^{-1}X(X^TV_{\theta}^{-1}X)^{-1}X^TV_{\theta}^{-1}.
+\]
+
+The REML equations \eqref{remleq} do not contain \(M\). Thus the REML
+estimators do not depend on which \(M\) is chosen. Note that \(M\) can
+be expressed as \(M = P_XC\), where \(C\) is an \(n\times (n-p)\)
+matrix. Thus \[z=M^Ty = C^TP_Xy = C^T(y-X\hat\beta_{LS}),\] where
+\(\hat\beta_{LS}\) is the least square estimator of \(\beta\), is a
+linear combination of residuals obtained after fitting the fixed
+effects. The \(z\) is also called error contrasts. The REML equations do
+not include the fixed effects. The fixed effects can be estimated based
+on the second part of the data: \(u = L^Ty\), where
+\(L = V_{\theta}^{-1}X\). From \eqref{lmm},
+\[u = L^TX\beta + L^TZb + L^T\epsilon \sim N(L^TX\beta, L^TV_{\theta}L).\]
+With \(\theta\) fixed, based on the data \(u\), the MLE of \(\beta\) is
+given by \begin{equation}\label{remlb}
+\hat\beta = [X^TL(L^TV_{\theta}L)^{-1}L^TX]^{-1}[X^TL(L^TV_{\theta}L)^{-1}L^Ty]
+= (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y.
+\end{equation} The MLE of \(\beta\) based on \(u\) is exactly the same
+with that based on \(y\) in \eqref{mleb}.
+
+The first and second derivatives of \(l_R\) are given as follows:
+\begin{equation}\label{remlS}
+\frac{\partial l_R}{\partial\theta_i}
+= -\frac{1}{2}tr(R_{\theta}V_i) + \frac{1}{2}y^TR_{\theta}V_iR_{\theta}y,
+\end{equation} \begin{equation}\label{remlH}
+\frac{\partial^2l_R}{\partial\theta_i\partial\theta_j}
+= \frac{1}{2}tr(R_{\theta}V_iR_{\theta}V_j) - y^TR_{\theta}V_iR_{\theta}V_jR_{\theta}y.
+\end{equation} From \eqref{remlH}, using
+\(E(y^TAy) = tr(AV_{\theta}) + \beta^TX^TAX\beta\),
+\(R_{\theta}X = \mathbf{0}\) and
+\(R_{\theta}V_{\theta}R_{\theta} = R_{\theta}\), we have Fisher
+information matrix: \begin{equation}\label{remlI}
+I(\theta) = -E\Big(\frac{\partial^2l_R}{\partial\theta\partial\theta^T}\Big) 
+= \big\{\frac{1}{2}tr(R_{\theta}V_iR_{\theta}V_j) \big\}_{0\leq i,j\leq K}.
+\end{equation}
+
+\hypertarget{hypothesis-testing}{%
+\subsubsection{Hypothesis testing}\label{hypothesis-testing}}
+
+Under regularity conditions, the MLE is consistent and asymptotically
+normal with asymptotic covariance matrix equal to the inverse of Fisher
+information matrix (\protect\hyperlink{ref-Jiang2007}{Jiang 2007}), that
+is, asymptotically \begin{equation}\label{betaDist}
+\hat\beta - \beta \sim N(\mathbf{0}, var(\hat\beta)),
+\end{equation} \begin{equation}\label{thetaDist}
+\hat\theta - \theta \sim N(\mathbf{0}, I(\theta)^{-1}).
+\end{equation} Moreover, for a given differentiable function
+\(g(\beta, \theta)\), from invariance property of MLE and delta method
+(\protect\hyperlink{ref-Casella2001}{Casella and Berger 2001}),
+\(g(\hat\beta, \hat\theta)\) is the MLE of \(g(\beta,\theta)\), which is
+consistent and asymptotically normal \begin{equation}\label{mleInv}
+\sqrt{n}(g(\hat\beta, \hat\theta) - g(\beta,\theta)) \sim N(0, \nabla g^TI(\beta, \theta)^{-1}\nabla g),
+\end{equation} where
+\(\nabla g = (\frac{\partial g(\beta,\theta)}{\partial\beta}, \frac{\partial g(\beta,\theta)}{\partial\theta})\)
+is the partial derivatives of \(g\).
+
+The hypothesis testing for fixed effects and variance components can be
+respectively defined as \[
+H_{0, i}: \beta_i = 0 ~~\text{versus}~~H_{1,i}: \beta_i\ne 0,
+\] \[
+H_{0, k}: \sigma^2_k = 0 ~~\text{versus}~~H_{1,k}: \sigma^2_k > 0.
+\]
+
+The variance components under null hypothesis, \(\sigma^2_k=0\), are on
+the boundary of the parameter space, in which case the above MLE
+asymptotic property is inappropriate. With negative permit of the
+parameters of variance components, we can extend the zero boundary as an
+interior by reparametrizing the covariance matrix: \[
+V_{\theta} = \sigma^2(I + \gamma_1Z_1Z_1^T + \ldots + \gamma_KZ_KZ_K^T),
+\] which is positive-definite and well-defined when
+\(\gamma_k > - 1/\lambda_{max}\), where \(\lambda_{max} > 0\), is the
+largest singular value of \(ZZ^T\). The variance components
+\(\theta_k = \sigma^2\gamma_k\) can be negative. Then the hypotheses for
+the variance components are extended as \[
+H_{0, k}: \theta_k \le 0 ~~\text{versus}~~H_{1,k}: \theta_k > 0,
+\] in which the zero components, \(\theta_k=0\), are no longer on the
+boundary of the parameter space and the MLE asymptotic properties hold.
+Then we can use z-statistic or t-statistic for hypothesis testing of
+fixed effects and variance components. The t-statistics for fixed
+effects are given by \begin{equation}\label{tcoef}
+T_i = \frac{\hat\beta_i}{\sqrt{var(\hat\beta_i)}} = \frac{\hat\beta_i}{\sqrt{var(\hat\beta)_{ii}}} ~\sim ~t(n - p).
+\end{equation} The t-statistic for a contrast, a linear combination of
+the estimated fixed effects, \(c^T\hat\beta\), is
+\begin{equation}\label{tcontrast}
+T_c = \frac{c^T\hat\beta}{\sqrt{c^Tvar(\hat\beta) c}} \sim t(n-p).
+\end{equation} The z-statistics for the parameters of variance
+components are given by \begin{equation}\label{zvarcomp}
+Z_k = \frac{\hat\theta_k}{\sqrt{[I(\hat\theta)^{-1}]_{kk}}} \sim N(0, 1).
+\end{equation} If \(Z_k > 0\), then \(\sigma_k^2 = \theta_k\) is
+definable and the mixed model is well-specified. Otherwise, if
+\(Z_k \le 0\), the mixed model is miss-specified, that is, no random
+effects are needed.
+
+\hypertarget{prediction-of-random-effects}{%
+\subsection{Prediction of random
+effects}\label{prediction-of-random-effects}}
+
+With the assumption of normality: \(b\sim N(\mathbf{0}, D_{\theta})\)
+and \(\epsilon\sim N(\mathbf{0}, \sigma^2I_n)\), from \eqref{lmm}, we
+have \[
+\begin{bmatrix}
+b\\y
+\end{bmatrix}
+\sim N\Big(
+\begin{bmatrix} \mathbf{0}\\X\beta \end{bmatrix},
+\begin{bmatrix} D_{\theta}&D_{\theta}Z^T\\ZD_{\theta}&V_{\theta}\end{bmatrix}
+\Big),
+\] where \(V_{\theta} = \sigma^2I_n + ZD_{\theta}Z^T\). The prediction
+of random effects is given by a conditional mean:
+\begin{equation}\label{blup}
+\hat b = E(b|y) = D_{\theta}Z^TV_{\theta}^{-1}(y-X\beta).
+\end{equation} Since
+\[E_{b,y}(\parallel\hat b - b\parallel^2) = E_y(\parallel\hat b - E(b|y)\parallel^2) + E_{b,y}(\parallel b - E(b|y)\parallel^2) ,\]
+\(\hat b = E(b|y)\), is the best predictor in the sense of minimum mean
+squared error (MSE) of prediction . It is seen from
+\(E(\hat b) = E_y[E(b|y)] = E(b)\), that the best predictor is unbiased.
+Without any assumption of normality, the prediction \eqref{blup} can
+also be derived from the best linear predictor of the form
+\[b_{BLP} = a + A[y-E(y)],\] by minimizing
+\(E(\parallel b_{BLP} - b\parallel^2)\) which yields
+\[a = E(b) = \mathbf{0}, \quad A = Cov(b, y)[Cov(y)]^{-1} = D_{\theta}Z^TV_{\theta}^{-1}.\]
+Therefore the \(\hat b\) is the best linear unbiased prediction (BLUP)
+(\protect\hyperlink{ref-Searle2006}{Searle, Casella, and McCulloch
+2006}). It is also known that the MLE of \(\beta\),
+\[\hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y,\] is the
+best linear unbiased estimator (BLUE), which does not require the
+normality assumption. This can be readily verified. Let
+\(\beta_{LUE} = \hat\beta + Cy\) be any linear unbiased estimator of
+\(\beta\). Then we have \(CX = \mathbf{0}\) and
+\[E(\parallel\beta_{LUE} - \beta\parallel^2) = E(\parallel\hat\beta- \beta\parallel^2) + tr(CV_{\theta}C^T) \ge E(\parallel\hat\beta- \beta\parallel^2).\]
+Thus \(\hat\beta\) minimizing the MSE is the BLUE.
+
+The BLUP of \(E(y|b) = X\beta + Zb\) is give by
+\begin{equation}\label{yblup}
+\begin{array}{rcl}
+\hat y 
+&=& X\beta + Z\hat b\\
+&=& X\beta + ZD_{\theta}Z^TV_{\theta}^{-1}(y-X\beta)\\
+&=& X\beta + (I_n - \sigma^2 V_{\theta}^{-1})(y-X\beta)\\
+&=& y - \sigma^2V_{\theta}^{-1}(y-X\beta).
+\end{array}
+\end{equation}
+
+Substituting \(\hat\beta\) and \(\hat\theta\) for the unknown parameters
+in \eqref{blup} and \eqref{yblup}, we have the empirical BLUPs
+(\protect\hyperlink{ref-Harville1991}{Harville 1991}),
+\begin{equation}\label{eblup}
+\hat b = E(b|y) = D_{\hat\theta}Z^TV_{\hat\theta}^{-1}(y-X\hat\beta) = D_{\hat\theta}Z^TR_{\hat\theta}y,
+\end{equation} \begin{equation}\label{yeblup}
+\hat y = E(y|b) = y - \hat\sigma^2R_{\hat\theta} y,
+\end{equation} where \[
+R_{\theta} = V_{\theta}^{-1} - V_{\theta}^{-1}X(X^TV_{\theta}^{-1}X)^{-1}X^TV_{\theta}^{-1}.
+\]
+
+\hypertarget{numerical-algorithms}{%
+\subsection{\texorpdfstring{Numerical
+algorithms\label{numerical}}{Numerical algorithms}}\label{numerical-algorithms}}
+
+With variance components estimated, the MLE and REML of fixed effects
+are given by \eqref{mleb} or \eqref{remlb}, \[
+\hat\beta = (X^TV_{\theta}^{-1}X )^{-1}X^TV_{\theta}^{-1}y.
+\] Estimating variance components by either MLE or REML is a difficult
+numerical problem. Various iterative methods based on the log
+likelihood, called gradient methods, have been proposed to compute the
+MLE and REML (\protect\hyperlink{ref-Searle2006}{Searle, Casella, and
+McCulloch 2006}). The gradient methods are represented by the iteration
+equation \begin{equation}\label{gradient}
+\theta^{(m+1)} = \theta^{(m)} + \Gamma(\theta^{(m)})\frac{\partial l(\theta^{(m)})}{\partial\theta},
+\end{equation} where \(\partial l(\theta)/\partial\theta\) is the
+gradient of the log likelihood function, and \(\Gamma(\theta)\) is a
+modifier matrix of the gradient direction. Let \(H(\theta)\) and
+\(I(\theta)\) be the Hessian matrix and information matrix of the log
+likelihood function with respect to \(\theta\). Let
+\(I_A(\theta) = [I(\theta)-H(\theta)]/2\) be the average information
+matrix. The modifier matrix can be specified by
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\tightlist
+\item
+  Newton--Raphson: \(\Gamma(\theta) = - H(\theta)^{-1}\);
+\item
+  Fisher scoring: \(\Gamma(\theta) = I(\theta)^{-1}\);
+\item
+  Average information: \(\Gamma(\theta) = I_A(\theta)^{-1}\).
+\end{enumerate}
+
+For MLE, from \eqref{mleS}, \eqref{mleH} and \eqref{mleI}, we have
+\begin{equation}\label{gMLE}
+\begin{array}{l}
+\frac{\partial l}{\partial\theta_i}  = 
+-\frac{1}{2}[tr(V_{\theta}^{-1}V_i) - y^TR_{\theta}V_iR_{\theta}y],\\
+H_{ij} =
+\frac{\partial^2l}{\partial\theta_i\partial\theta_j} = \frac{1}{2}tr(V_{\theta}^{-1}V_iV_{\theta}^{-1}V_j) - y^TR_{\theta}V_iV_{\theta} ^{-1}V_jR_{\theta}y,\\
+I_{ij} = -E(H_{ij}) = \frac{1}{2}tr(V_{\theta}^{-1}V_iV_{\theta}^{-1}V_j),\\
+I_{A,ij} =\frac{1}{2}(I_{ij} - \hat H_{ij}) = \frac{1}{2}y^TR_{\theta}V_iV_{\theta} ^{-1}V_jR_{\theta}y.
+\end{array}
+\end{equation}
+
+For REML, \(l = l_R(\theta)\). From \eqref{remlS}, \eqref{remlH} and
+\eqref{remlI}, we have \begin{equation}\label{gREML}
+\begin{array}{l}
+\frac{\partial l_R}{\partial\theta_i}
+= -\frac{1}{2}[tr(R_{\theta}V_i) - y^TR_{\theta}V_iR_{\theta}y],\\
+H_{ij} = \frac{\partial^2l_R}{\partial\theta_i\partial\theta_j}
+= \frac{1}{2}tr(R_{\theta}V_iR_{\theta}V_j) - y^TR_{\theta}V_iR_{\theta}V_jR_{\theta}y,\\
+I_{ij} = -E(H_{ij})
+= \frac{1}{2}tr(R_{\theta}V_iR_{\theta}V_j),\\
+I_{A,ij} =
+\frac{1}{2}(I_{ij} - H_{ij}) = \frac{1}{2}y^TR_{\theta}V_iR_{\theta}V_jR_{\theta}y.
+\end{array}
+\end{equation} Recall \(V_i = Z_iZ_i^T\), defined in \eqref{mleS}.
+
+\hypertarget{summary-statistics-based-algorithm}{%
+\subsection{Summary statistics based
+algorithm}\label{summary-statistics-based-algorithm}}
+
+The iterative methods by \eqref{gMLE} and \eqref{gREML} have
+computational complexity of \(O(n^2q)\). Now we consider a summary
+statistics based algorithm for the LMM estimation, which uses
+summary-level matrices, \(X^TX\), \(X^TZ\) and \(Z^TZ\), to estimate LMM
+parameters instead of individual-level matrices, \(X\) and \(Z\). The
+algorithm has a computational complexity of \(O(nq^2)\), linearly
+scalable with the sample size \(n\). For convenience, we define
+\(\gamma_k = \sigma^2_k/\sigma^2\), \(k = 1,\ldots,K\), and
+\[V_{\gamma} = I_n + \gamma_1 Z_1Z_1^T +\ldots+\gamma_KZ_KZ_K^T= I_n+ZDZ^T,\]
+\[
+R_{\gamma} = V_{\gamma}^{-1} - V_{\gamma}^{-1}X(X^TV_{\gamma}^{-1}X)^{-1}X^TV_{\gamma}^{-1},
+\] where \[
+D = \begin{bmatrix} \gamma_1I_{q_1} &\ldots & \mathbf{0}\\
+\vdots &\ddots &\vdots\\
+\mathbf{0} &\ldots &\gamma_KI_{q_{K}}
+\end{bmatrix}.
+\] Then \(V_{\theta} = \sigma^2V_{\gamma}\),
+\(R_{\theta} = \sigma^{-2}R_{\gamma}\), and
+\begin{equation}\label{formTr}
+\begin{array}{rcl}
+tr(V_{\theta}^{-1}V_i) &=& \sigma^{-2}tr(Z_i^TV_{\gamma}^{-1}Z_i),\\
+tr(V_{\theta}^{-1}V_iV_{\theta}^{-1}V_j) &=&  \sigma^{-4}tr[(Z_i^TV_{\gamma}^{-1}Z_j)^T(Z_i^TV_{\gamma}^{-1}Z_j)],\\
+tr(R_{\theta}V_i) &=&  \sigma^{-2}tr(Z_i^TR_{\gamma}Z_i),\\
+tr(R_{\theta}V_iR_{\theta}V_j) &=&  \sigma^{-4}tr[(Z_i^TR_{\gamma}Z_j)^T(Z_i^TR_{\gamma}Z_j)].
+\end{array}
+\end{equation} By the Sherman-Morrison-Woodbury formula
+(\protect\hyperlink{ref-Golub2013}{Golub and Loan 2013}), we can verify
+that \[
+V_{\gamma}^{-1} = I_n - Z(I_q + DZ^TZ)^{-1}DZ^T,
+\] \[
+R_{\gamma} = R - RZ(I_q + DZ^TRZ)^{-1}DZ^TR,
+\] where \[
+R = I_n - X(X^TX)^{-1}X^T.
+\] Let \begin{equation}\label{covarM}
+M=(I_q + DZ^TRZ)^{-1}.
+\end{equation} Then \[R_{\gamma} = R - RZMDZ^TR.\] By the identity
+equation \[
+DZ^TRZM = MDZ^TRZ = I_q - M,
+\] and \(R^2=R\), we have \[R_{\gamma}^2 = R_{\gamma} - RZM^2DZ^TR,\]
+and \begin{equation}\label{formH}
+\begin{array}{ccl}
+Z^T_iV_{\gamma}^{-1}Z_j &=& Z_i^TZ_j - (Z_i^TZ)MD(Z^TZ_j),\\
+Z^T_iR_{\gamma}Z_j &=& Z_i^TRZ_j - (Z_i^TRZ)MD(Z^TRZ_j),\\
+Z^T_iR_{\gamma}^2Z_i &=& Z^T_iR_{\gamma}Z_i - (Z_i^TRZ)M^2D(Z^TRZ_i),\\
+tr(R_{\gamma}) &=& tr(R)-q+tr(M),\\
+tr(R_{\gamma}^2) &=& tr(R)-q+tr(M^2),
+\end{array}
+\end{equation} \begin{equation}\label{formy}
+\begin{array}{ccl}
+Z^T_iR_{\gamma}y &=& Z_i^TRy - (Z_i^TRZ)MD(Z^TRy),\\
+y^TR_{\gamma}^2y &=& y^TR_{\gamma}y - (y^TRZ)M^2D(Z^TRy),\\
+y^TR_{\gamma}y &=& y^TRy - (y^TRZ)MD(Z^TRy),
+\end{array}
+\end{equation} where \begin{equation}\label{formSS}
+\begin{array}{c}
+Z_i^TRZ_j = Z_i^TZ_j - (Z_i^TX)(X^TX)^{-1}(X^TZ_j),\\
+Z^TRy = Z^Ty - (Z^TX)(X^TX)^{-1}(X^Ty),\\
+y^TRy = y^Ty - (y^TX)(X^TX)^{-1}(X^Ty).
+\end{array}
+\end{equation} Thus the iterative algorithms \eqref{gradient},
+\eqref{gMLE} and \eqref{gREML} can be computed by using the summary
+statistics: \(X^TX\), \(X^TZ\), \(X^Ty\), \(Z^Ty\) and \(Z^TZ\), based
+on the algorithms given by \eqref{formTr}\textasciitilde{}\eqref{formy}.
+
+\textbf{Fast and scalable}: The complexity for computing the summary
+statistics is \(O(n(p^2 + q^2))\). The complexity for computing the
+\(q\times q\) matrix \(M\) by \eqref{covarM} is \(O(q^3)\) or even
+\(O(q^2\log(q))\). The algorithms given by \eqref{formH} and
+\eqref{formy} have a complexity of \(O(p^3+q^3)\). Then the summary
+statistics based algorithm given by
+\eqref{formTr}\textasciitilde{}\eqref{formy} has a complexity of
+\(O(n(p^2 + q^2)+p^3+q^3)\). In single-cell DE analysis, the number of
+cells (sample size) \(n\) is large, while the numbers of fixed and
+random effects \(p\) and \(q\) are relatively small. Thus the above
+summary statistics based algorithm has a complexity of
+\(O(n(p^2+q^2))\), linearly scalable with the sample size \(n\). The
+summary statistics can be computed in advance. Once computed, the
+algorithm has a complexity of \(O(p^3+q^3)\) that doesn't depend on the
+sample size \(n\). So the algorithm is fast and requires less computer
+memory.
+
+\textbf{LMM with dimension reduction}: The LMM algorithm can further
+speed up by reducing the dimension of random effects. For a large number
+of random effects, we may combine the correlated random effects by
+cluster analysis or principal component analysis (PCA). By PCA, we have
+\[Z_k = U_kV_k^T,\] where \(U_k\) is an \(n\times r_k\) matrix of
+principal components (PCs), \(V_k\) is an \(q\times r_k\) matrix,
+\(r_k\) is the rank of \(Z_k\), \(U_k^TU_k\) is diagonal, and
+\(V_k^TV_k=I_{r_k}\), \(k=1, \ldots, K\). Thus the LMM \eqref{lmm} can
+be rewritten as \begin{equation}\label{lmmeq}
+y = X\beta + U_1v_1 + \ldots + U_Kv_K + \epsilon = X\beta + Uv + \epsilon,
+\end{equation} where
+\(v_k = V_k^Tb_k\sim N(\mathbf{0}, \sigma^2_k I_{r_k})\), is a
+\(r_k\)-vector of random effects. LMM \eqref{lmmeq} is equivalent to the
+LMM \eqref{lmm}. The matrices \(U_k\) in the LMM \eqref{lmmeq} have a
+lower dimension \(r_k \leq\min(n, q_k)\). It is possible to approximate
+the design matrix \(Z_k\) using a smaller number of principal components
+such that \(r_k \ll\min(n, q_k)\).
+
+\hypertarget{simulation-methods}{%
+\section{Simulation methods}\label{simulation-methods}}
+
+To simulate the multi-subject multi-cell-type scRNA-seq data, we
+developed a scRNA-seq simulator, named simuRNAseq, by using a reference
+data based on a negative binomial (NB) distribution. The reference data
+contains genes-by-cells counts matrix that is used to estimate the
+dispersion and mean of the NB distribution for the genes to be
+simulated. The simulated genes are randomly selected from the reference
+data. The simulated cells are randomly selected from the meta data that
+specifies subjects, cell-types and treatments for the cells. The meta
+data can be generated either from reference data or randomly. The
+simuRNAseq workflow is illustrated in the Supplemental Figure
+\ref{fig:simuRNAseq}, which consists of following main steps:
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Estimate the dispersion and mean of the NB distribution for each gene
+  in the reference data.
+\item
+  Randomly select the non-DE and DE genes from the genes in the
+  reference data and the cells from the meta data, with given numbers.
+\item
+  Generate counts by sampling from the NB distributions for the non-DE
+  genes without log-fold-change (logFC) between treatments and for the
+  DE genes with assigned logFC.
+\end{enumerate}
+
+Let \(y_{g, ijk}\) be the count for gene \(g\) and the cell from subject
+\(k = 1,\ldots, n_s\) and cell-type \(j = 1, \ldots, n_c\) with
+treatment \(i=1,2\). The count is generated by the NB distribution with
+dispersion \(\phi_g\) and mean \(\mu_{g,ijk}\),
+\begin{equation}\label{nbinomsimu}
+y_{g, ijk}\sim NB(\mu_{g,ijk}, \phi_g),
+\end{equation} where
+\[\log(\mu_{g,ijk}) = \log(\mu_g) + \alpha_{ijk} + \beta_{g, ij} + b_{g,k},\]
+\(\phi_g\) and \(\mu_g\) are the dispersion and mean estimated from the
+reference data for gene \(g\), \(\alpha_{ijk}\) is a centered
+log-library-size for the cell \(c_{ijk}\), \(\beta_{g,ij}\) represents
+the effect of treatment \(i\) specific to cell-type \(j\),
+\(b_{g,k} \sim N(0, \sigma^2_b)\) is a random effect of subject
+variation. For the non-DE genes, \(\beta_{g,1j}=\beta_{g,2j}=0\). For
+the DE genes, \(\beta_{g,1j} = 0\) and
+\(\beta_{g, 2j}\sim \pm Uniform(a_1, a_2)\), a uniform distribution with
+\(a_1a_2>0\), where \(a_1\) and \(a_2\) are the lower and upper bounds
+of the DE gene effects,
+
+The mean of NB distribution is taken as the sample mean for each gene.
+The dispersion of NB distribution is computed by the method-of-moments
+estimate (MME) (\protect\hyperlink{ref-Clark1989}{Clark and Perry
+1989}). Compared to the maximum likelihood based estimates, such as
+glm.nb function in R package MASS, the MME is computationally more
+simple and performs reasonably well.
+
+\hypertarget{simurnaseq-performance}{%
+\subsection{simuRNAseq performance}\label{simurnaseq-performance}}
+
+We used the PBMC scRNA-seq data as a reference to simulate the scRNA-seq
+data. The meta data was created from the reference data. The PBMC data
+from eight lupus patients (\protect\hyperlink{ref-PBMC2018}{Kang et al.
+2018}), available through Bioconductor's ExperimentHub package, contains
+35,635 genes and 29,065 cells (14,619 control cells and 14,446
+stimulated cells) consisting of eight identified cell types. After
+quality control filtering (filtering the cells with few or many detected
+genes and the genes lowly expressed), the data contains 7,040 genes and
+26,820 cells.
+
+The dispersions estimated by MME method are coincident with the
+estimates by glm.nb for the PBMC data, see Supplemental Figure
+\ref{fig:simuRNAseq_perform} (a). MME needed only 0.48 seconds while
+glm.nb took about 51.5 minutes for estimating the dispersions. This
+shows that the MME method is fast and performs very well. We compared
+the means and variances of counts across cells and library sizes for the
+real and simulated data by scatterplot, see Supplemental Figure
+\ref{fig:simuRNAseq_perform} (b), (c) and (d), which show similarity
+between real and simulated data.
+
+\hypertarget{differential-expression-analysis-of-simulated-scrna-seq-data}{%
+\subsection{Differential expression analysis of simulated scRNA-seq
+data}\label{differential-expression-analysis-of-simulated-scrna-seq-data}}
+
+We generated scRNA-seq datasets consisting of 6,000 genes with 6
+different numbers of cells (sample sizes) from 20,000 to 120,000 using
+the PBMC data as a reference, as described above. The genes to be
+simulated were randomly selected from the reference data. We randomly
+generated the meta data comprising 25 subjects and 12 cell-types which
+were treated by one of two treatments. The treatments, cell-types and
+subjects are assigned randomly with equal probability. There are 480 DE
+genes specific to one cell-type. For the DE genes
+\(b_{g, 2j}\sim \pm Uniform(0.25, 1)\). The variance component
+\(\sigma^2_b = 0.16\).
+
+We analyzed differential expressions of the simulated scRNA-seq data
+using LMM with formula: \begin{equation}\label{mixedmodel}
+\sim \log(library.size) + cell.type + cell.type:treatment + (1|subject).
+\end{equation} The interaction term \(cell.type:treatment\) in the model
+formula \eqref{mixedmodel} represents treatment effects in a specific
+cell-type. The last term represent random effects of subject variation.
+We fit the LMM to the log-transformed counts, \(log_2(1+y)\), by lmm and
+lmmfit. Note that lmm and lmmfit don't directly use model formula as an
+argument and need design matrices of fixed and random effects that can
+be created by \[
+X = model.matrix(\sim log(library.size) + cell.type + cell.type:treatment),
+\] \[
+Z = model.matrix(\sim 0 + subject).
+\]
+
+\hypertarget{table-computation-times}{%
+\subsection{\texorpdfstring{Table \ref{tab:lmer}: Computation
+times}{Table : Computation times}}\label{table-computation-times}}
+
+\begin{table}[ht]
+\caption{Computation time in minutes for running lmm, lmmfit, lmer and nebula in differential expression analysis of the simulated data across various sample sizes $n$.} 
+\label{tab:lmer}
+\centering
+\begin{tabular}{lrrrrrr}
+  \hline
+ & n=20000 & n=40000 & n=60000 & n=80000 & n=100000 & n=120000 \\ 
+  \hline
+lmm & 0.34 & 0.31 & 0.29 & 0.29 & 0.30 & 0.29 \\ 
+  lmmfit & 0.46 & 0.51 & 0.67 & 0.67 & 0.88 & 1.04 \\ 
+  lmer & 25.15 & 49.70 & 74.90 & 94.02 & 122.44 & 149.12 \\ 
+  nebula & 39.71 & 86.45 & 140.95 & 205.98 & 274.87 & 331.89 \\ 
+   \hline
+\end{tabular}
+\end{table}
+
+\hypertarget{figure-.-workflow-of-rna-seq-simulator-simurnaseq}{%
+\subsection{\texorpdfstring{Figure \ref{fig:simuRNAseq}. Workflow of
+RNA-seq simulator,
+simuRNAseq}{Figure . Workflow of RNA-seq simulator, simuRNAseq}}\label{figure-.-workflow-of-rna-seq-simulator-simurnaseq}}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.95\textwidth,height=\textheight]{Figures/diagram_simuRNAseq1.pdf}
+\caption{RNA-seq simulator, simuRNAseq, workflow \label{fig:simuRNAseq}}
+\end{figure}
+
+\hypertarget{figure-.-performance-of-the-scrna-seq-simulator-simurnaseq}{%
+\subsection{\texorpdfstring{Figure \ref{fig:simuRNAseq_perform}.
+Performance of the scRNA-seq simulator,
+simuRNAseq}{Figure . Performance of the scRNA-seq simulator, simuRNAseq}}\label{figure-.-performance-of-the-scrna-seq-simulator-simurnaseq}}
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/PBMC_dispersions_glmnb_MME.pdf}
+         \caption{Dispersions}
+     \end{subfigure}
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/PBMC_simulated_meangene.pdf}
+         \caption{Means}
+     \end{subfigure}
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/PBMC_simulated_vargene.pdf}
+         \caption{Variances}
+     \end{subfigure}
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/PBMC_simulated_libsizes.pdf}
+         \caption{Library sizes}
+     \end{subfigure}
+     \centering
+     \caption{\textbf{Performance of the scRNA-seq simulator, simuRNAseq}: (a) Scatterplot of dispersions estimated by MME and glm.nb. (b) Scatterplot of means of real and simulated counts across cells. (c) Scatterplot of variances of real and simulated counts across cells. (d) Scatterplot of library sizes of real and simulated counts.}
+     \label{fig:simuRNAseq_perform}
+\end{figure}
+
+\hypertarget{figure-qq-plots-of-lmm-and-nebula-p-values}{%
+\subsection{\texorpdfstring{Figure \ref{fig:nbinom_QQ}: QQ-plots of lmm
+and nebula
+p-values}{Figure : QQ-plots of lmm and nebula p-values}}\label{figure-qq-plots-of-lmm-and-nebula-p-values}}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.95\textwidth,height=\textheight]{Figures/simuNBMM_qqplot_null.pdf}
+\caption{QQ-plots of lmm and nebula p-values under null hypothesis
+H\(_0\) in different sample size \(n\). \label{fig:nbinom_QQ}}
+\end{figure}
+
+\hypertarget{figure-roc-curves-of-tpr-versus-fpr-for-lmm-and-nebula}{%
+\subsection{\texorpdfstring{Figure \ref{fig:nbinom_ROC}: ROC curves of
+TPR versus FPR for lmm and
+nebula}{Figure : ROC curves of TPR versus FPR for lmm and nebula}}\label{figure-roc-curves-of-tpr-versus-fpr-for-lmm-and-nebula}}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.95\textwidth,height=\textheight]{Figures/simuNBMM_AUC.pdf}
+\caption{ROC curves of TPR versus FPR for lmm and nebula in different
+sample size \(n\). \label{fig:nbinom_ROC}}
+\end{figure}
+
+\hypertarget{figure-scatterplots-of-lmm-and-nebula-t-values-and-p-values}{%
+\subsection{\texorpdfstring{Figure \ref{fig:nbinomperform}: Scatterplots
+of lmm and nebula t-values and
+p-values}{Figure : Scatterplots of lmm and nebula t-values and p-values}}\label{figure-scatterplots-of-lmm-and-nebula-t-values-and-p-values}}
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/simuNBMM_t.png}
+         \caption{t-values}
+     \end{subfigure}
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/simuNBMM_p.png}
+         \caption{p-values}
+     \end{subfigure}    
+     \centering
+     \caption{Scatterplots of lmm and nebula t-values and p-values.}
+     \label{fig:nbinomperform}
+\end{figure}
+
+\hypertarget{biological-data-analyses}{%
+\section{Biological data analyses}\label{biological-data-analyses}}
+
+\textbf{Model formula for fitting the kidney scRNA-seq data}:
+
+\[
+\sim log(library.size) + Cell\_Types\_Broad + Cell\_Types\_Broad:sex + (1 | sampleID)
+\]
+
+\textbf{Model formula for fitting the Tuberculosis (TB) scRNA-seq data}:
+
+\[\sim log(library.size) + cluster\_name + cluster\_name:TB\_status + (1 | donor)\]
+
+\hypertarget{figure-.-accuracy-and-computational-efficiency-of-lmm-in-the-biological-data-analysis}{%
+\subsection{\texorpdfstring{Figure \ref{fig:realdata_lmm}. Accuracy and
+computational efficiency of lmm in the biological data
+analysis}{Figure . Accuracy and computational efficiency of lmm in the biological data analysis}}\label{figure-.-accuracy-and-computational-efficiency-of-lmm-in-the-biological-data-analysis}}
+
+\begin{figure}[htb]
+     \centering
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/kidney_lmmfit_lmer_diff.png}
+         \caption{Differences of LMM estimates for the kidney data}
+     \end{subfigure}
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/kidney_runtime3.pdf}
+         \caption{Computation time for the kidney data}
+     \end{subfigure} 
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/TB_lmm_lmer_diff.png}
+         \caption{Differences of LMM estimates for the TB data}
+     \end{subfigure}
+     \begin{subfigure}[b]{0.45\textwidth}
+         \centering
+         \includegraphics[width=\textwidth]{Figures/TB_runtime.pdf}
+         \caption{Computation time for the TB data}
+     \end{subfigure}
+     \centering
+     \caption{Comparison with lmer in the analysis of kidney data. (a) and (c) Boxplots of differences of variance components, coefficients, and t-values between lmm and lmer fitting for the kidney data and TB data. (b) and (d) Computation time of lmm, lmmfit and lmer for the kidney data and TB data.}
+     \label{fig:realdata_lmm}
+\end{figure}
+
+\hypertarget{references}{%
+\section*{References}\label{references}}
+\addcontentsline{toc}{section}{References}
+
+\hypertarget{refs}{}
+\begin{CSLReferences}{1}{0}
+\leavevmode\vadjust pre{\hypertarget{ref-Casella2001}{}}%
+Casella, George, and Roger L. Berger. 2001. \emph{Statistical
+Inference}. Duxbury Press.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Clark1989}{}}%
+Clark, Suzanne J., and Joe N. Perry. 1989. {``Estimation of the Negative
+Binomial Parameter k by Maximum Quasi-Likelihood.''} \emph{Biometrics}
+45 (1). \url{https://doi.org/10.2307/2532055}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Golub2013}{}}%
+Golub, Gene H., and Charles F. Van Loan. 2013. \emph{Matrix
+Computations}. 4th ed. Johns Hopkins University Press.
+
+\leavevmode\vadjust pre{\hypertarget{ref-HartleyRao1967}{}}%
+Hartley, H. O., and J. N. K. Rao. 1967. {``Maximum-Likelihood Estimation
+for the Mixed Analysis of Variance Model.''} \emph{Biometrika} 54 (1/2):
+93--108. \url{http://www.jstor.org/stable/2333854}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Harville1977}{}}%
+Harville, David A. 1977. {``Maximum Likelihood Approaches to Variance
+Component Estimation and to Related Problems.''} \emph{Journal of the
+American Statistical Association} 72 (358): 320--38.
+\url{https://doi.org/10.1080/01621459.1977.10480998}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Harville1991}{}}%
+---------. 1991. {``That BLUP Is a Good Thing: The Estimation of Random
+Effects: Comment.''} \emph{Statistical Science} 6 (1): 35--39.
+\url{http://www.jstor.org/stable/2245697}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Jiang2007}{}}%
+Jiang, Jiming. 2007. \emph{Linear and Generalized Linear Mixed Models
+and Their Applications}. New York: Springer.
+\url{https://doi.org/10.1007/978-0-387-47946-0}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-PBMC2018}{}}%
+Kang, Hyun Min, Meena Subramaniam, Sasha Targ, Michelle Nguyen, Lenka
+Maliskova, Elizabeth McCarthy, Eunice Wan, et al. 2018. {``Multiplexed
+Droplet Single-Cell RNA-Sequencing Using Natural Genetic Variation.''}
+\emph{Nature Biotechnology} 36 (89--94).
+\url{https://doi.org/10.1038/nbt.4042}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Laird1982}{}}%
+Laird, Nan M., and James H. Ware. 1982. {``Random-Effects Models for
+Longitudinal Data.''} \emph{Biometrics} 38 (4): 963--74.
+\url{http://www.jstor.org/stable/2529876}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-PattersonThompson1971}{}}%
+Patterson, H. D., and R. Thompson. 1971. {``Recovery of Inter-Block
+Information When Block Sizes Are Unequal.''} \emph{Biometrika} 58 (3):
+545--54. \url{https://doi.org/10.2307/2334389}.
+
+\leavevmode\vadjust pre{\hypertarget{ref-Searle2006}{}}%
+Searle, Shayle R., George Casella, and Charles E. McCulloch. 2006.
+\emph{Variance Components}. New Jersey: John Wiley \& Sons, Inc.
+
+\end{CSLReferences}
+
+\end{document}

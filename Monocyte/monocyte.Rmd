@@ -1,0 +1,324 @@
+---
+title: "Monocyte differential expression analysis"
+author: "Changjiang Xu"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  pdf_document: 
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+  html_document: 
+    keep_tex: yes
+    toc: yes
+  html_notebook: default
+  word_document: default
+abstract: " "
+header-includes: \usepackage{xcolor, colortbl, rotating, graphicx, caption, subcaption}
+---
+
+<!--comment
+Loading libraries
+Setting work directories
+-->
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Monocyte data
+
+The monocyte data is a subset of smart-seq2 data. The monocytes are defined by clusters of the cells that are from 2 genotypes: tet2 mutant and wildtype. The meta data contains the "orig.ident" which is the batch/plate. It also includes information like the "patient" from which the cells were derived. The question is what are the differential expressed genes in the monocyte population between tet2 mutant and tet2 wild type (with correcting for the patient information).
+
+```{r}
+##load the data
+library(Matrix)
+load("Data/Mono_subset.RData")
+
+ls()
+dim(counts)
+dim(metaData)
+all(colnames(counts) == rownames(metaData))
+
+##Number of genes per sample
+lognGenes <- log2(colSums(counts))
+hist(lognGenes, xlab = "log2(nGene)", main = NA)
+
+##Redefine the levels of genotypes
+metaData$TET2 <- factor(metaData$TET2_genotype, levels = c("wildtype", "mutant"))
+table(metaData$TET2)
+
+##Filtering and log-transformation
+Y <- counts[rowSums(counts > 0) >= 10 & rowSums(counts > 2) >= 5, ] 
+Y <- log(t(Y) + 1)
+dim(Y)
+
+## PCA plot and counts scatter plot
+
+```
+
+PCA plots show that some samples are separated by patients and not separated by TET2-genotypes.
+
+![PC1 and PC2. The colors represent different patients. \label{fig:PC1PC2}](Figures/monocyte_PC1PC2_mutant.pdf){width=60%}
+
+![PC2 and PC3. The colors represent different patients. \label{fig:PC2PC3}](Figures/monocyte_PC2PC3_mutant.pdf){width=60%}
+
+![Counts for 6 genes. Row panels represent each gene. The last 4 columns represent different patients. \label{fig:counts}](Figures/counts_plot.pdf)
+
+
+\newpage
+
+
+# Differential expressions
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
+library(MASS)
+source("R/lmmfit.R")
+source("R/lmmfitSS.R")
+source("R/lmmtest.R")
+source("R/qqpvalue.R")
+```
+
+## Model I: $~ TET2 + (1 | patient)$
+
+Use patient as a random effect to consider correlation within the patient. 
+
+```{r warning = FALSE}
+##Design matrix for fixed effects
+X <- model.matrix(~ TET2, data = metaData)
+##Design matrix for random effects
+Z <- model.matrix(~ 0 + patient, data = metaData)
+d <- ncol(Z)
+
+##LMM fitting
+maxIter <- 200
+t1 <- Sys.time()
+fit <- lmmfit(Y = Y, X = X, Z = Z, d = d, max.iter = maxIter, epsilon = 1e-5)
+t2 <- Sys.time()
+difftime(t2, t1) 
+
+##number of convergences
+sum(fit$niter < maxIter)
+##number of non-convergences at epsilon = 1e-5
+sum(fit$niter == maxIter)
+##at epsilon = 1e-2
+sum(apply(abs(fit$dlogL) > 1e-2, 2, any))
+
+##variance components of random effects
+k <- 1
+range(fit$theta[k, ])
+##p-values for hypothesis tests of variance components:
+##H0: theta <=0 vs H1: theta > 0
+p <- pnorm(fit$theta[k, ]/fit$se[k, ], lower.tail = F)
+sum(p <= 0.05)
+range(p)
+
+##LMM tests
+test <- lmmtest(fit)
+test <- test[, grep("mutant", colnames(test))]
+test <- as.data.frame(test)
+test$TET2mutant_FDR <- p.adjust(test$TET2mutant_pvalue, method = "BH")
+test <- test[order(test$TET2mutant_pvalue),]
+sum(test$TET2mutant_FDR <= 0.05, na.rm = T)
+
+fileName <- "Data/model1_test.csv"
+write.csv(cbind(Gene = rownames(test), test), file = fileName, row.names = F)
+
+pv <- test[, grep("pvalue", colnames(test))]
+	par(mfrow = c(2,1), mar = c(4.5, 4.5, 1.1, 2.1))
+	qqpvalue(pv, col = "blue", cex = 0.6)
+	hist(pv, xlab = "Model I p-values for mutant vs wildtype", col = "green", cex = 0.6, main = NA)
+
+```
+
+### DREAM outputs
+
+```{r}
+outDream <- read.delim(file = "Data/mono_dream_output.tsv", sep = "\t")
+dim(outDream)
+#[1] 10663     7
+outDream <- outDream[order(outDream$P.Value), ]
+head(outDream)
+sum(outDream$adj.P.Val <= 0.05)
+
+pv <- outDream$P.Value
+	par(mfrow = c(2,1), mar = c(4.5, 4.5, 1.1, 2.1))
+	qqpvalue(pv, col = "blue", cex = 0.6)
+	hist(pv, xlab = "DREAM test p-values", col = "green", cex = 0.6, main = NA)
+	
+```	
+
+### Comparing with the results obtained by lmer
+
+For the genes with positive estimates of variance components, the estimates of variance components, coefficients and covariance matrices of coefficients are identical for both lmmfit and lmer.
+
+```{r}
+load("Data/lmmfit_lmer_model1.RData")
+
+##lmer running time
+difftime(t2, t1) 
+##convergences and positive estimates of variance components
+i <- (fit$niter < maxIter) & (s[1, ] > 0) & (fit$theta[1, ] > 0)
+##estimates of variance components
+range(fit$theta[, i] - s[, i]) 
+##coefficients of fixed effects
+range(fit$coef[, i] - b[, i])
+##covariance matrices of coefficients
+range(fit$cov[,,i] - v[,,i])
+
+par(mfrow = c(2,2), mar = c(4.5, 4.1, 2.1, 2.1))
+##estimates of variance components
+plot(fit$theta[, i], s[, i], xlab = "lmmfit", ylab = "lmer", 
+main = "Estimates of variance components", cex = 0.6, cex.main = 0.8) 
+abline(0, 1, col = "gray")
+##coefficients of fixed effects
+plot(fit$coef[, i], b[, i], xlab = "lmmfit", ylab = "lmer", 
+main = "Coefficients (fixed effects)", cex = 0.6, cex.main = 0.8) 
+abline(0, 1, col = "gray")
+##covariance matrices of coefficients
+plot(fit$cov[,,i], v[,,i], xlab = "lmmfit", ylab = "lmer", 
+main = "Covariance matrices of coefficients", cex = 0.6, cex.main = 0.8) 
+abline(0, 1, col = "gray")
+
+```
+
+## Model II: $patient + TET2 + (1 | patient)$
+
+Include the patient as fixed effect to adjust the batch effect.
+
+```{r}
+##design matrix for fixed effects
+X <- model.matrix(~ patient + TET2, data = metaData)
+colnames(X) <- gsub("patient", "", colnames(X))
+
+##design matrix for random effects
+Z <- model.matrix(~ 0 + patient, data = metaData)
+d <- ncol(Z)
+
+##LMM fitting
+maxIter <- 50
+t1 <- Sys.time()
+fit <- lmmfit(Y = Y, X = X, Z = Z, d = d, max.iter = maxIter, epsilon = 1e-5)
+t2 <- Sys.time()
+difftime(t2, t1) 
+
+##number of convergences
+sum(fit$niter < maxIter)
+##number of non-convergences at epsilon = 1e-5
+sum(fit$niter == maxIter)
+##variance components of random effects
+k <- 1
+range(fit$theta[k, ])
+##p-values for hypothesis tests of variance components:
+##H0: theta <=0 vs H1: theta > 0
+p <- pnorm(fit$theta[k, ]/fit$se[k, ], lower.tail = F)
+sum(p <= 0.05, na.rm = T)
+
+##LMM tests
+##comparisons of mutant vs wildtype with adjusting patient batch effect
+test <- lmmtest(fit, "TET2mutant")
+test <- as.data.frame(test)
+test$TET2mutant_FDR <- p.adjust(test$TET2mutant_pvalue, method = "BH")
+test <- test[order(test$TET2mutant_pvalue),]
+sum(test$TET2mutant_FDR <= 0.05, na.rm = T)
+
+fileName <- "Data/model2_test.csv"
+write.csv(cbind(Gene = rownames(test), test), file = fileName, row.names = F)
+
+pv <- test[, grep("pvalue", colnames(test))]
+	par(mfrow = c(2,1), mar = c(4.5, 4.5, 1.1, 2.1))
+	qqpvalue(pv, col = "blue", cex = 0.6)
+	hist(pv, xlab = "Model II p-values for mutant vs wildtype", col = "green", cex = 0.6, main = NA)
+	
+```
+
+Venn diagrams of top genes 
+
+![Venn diagram of top 50 genes. \label{fig:Venn1}](Figures/Venndiagramtop50.pdf){width=60%}
+
+![Venn diagram of top 100 genes. \label{fig:Venn2}](Figures/Venndiagramtop100.pdf){width=60%}
+
+
+## Model III: $0 + patient + patient:TET2 + (1 | patient)$
+
+Include the interaction to compare the difference within a specified patient.
+
+```{r}
+##design matrix for fixed effects
+X <- model.matrix(~ 0 + patient + patient:TET2, data = metaData)
+colnames(X) <- gsub("patient", "", colnames(X))
+
+##Note: 
+##An equivalent model with design matrix:
+##X <- model.matrix(~ 0 + patient*TET2, data = metaData)
+##Coefficient of 'mutant' is the effect of G1288D:mutant 
+##Sum of coefficients 'mutant' + 'MM2129:mutant' is the effect of MM2129:mutant
+##Sum of coefficients 'mutant' + 'MM522:mutant' is the effect of MM522:mutant
+##Sum of coefficients 'mutant' + 'R544stop:mutant' is the effect of R544stop:mutant
+
+##Other equivalent models:
+#X <- model.matrix(~ 0 + TET2 + patient + TET2:patient, data = metaData)
+#X <- model.matrix(~ 0 + patient + TET2 + TET2:patient, data = metaData)
+#X <- model.matrix(~ 0 + patient + TET2 + patient:TET2, data = metaData)
+
+
+##design matrix for random effects
+##(1 | patient) in lme4::lmer
+Z <- model.matrix(~ 0 + patient, data = metaData)
+d <- ncol(Z)
+
+##LMM fitting
+maxIter <- 50
+t1 <- Sys.time()
+fit <- lmmfit(Y = Y, X = X, Z = Z, d = d, max.iter = maxIter, epsilon = 1e-5)
+t2 <- Sys.time()
+difftime(t2, t1) 
+
+
+##number of convergences
+sum(fit$niter < maxIter)
+##number of non-convergences at epsilon = 1e-5
+sum(fit$niter == maxIter)
+
+##variance components of random effects
+k <- 1
+range(fit$theta[k, ])
+##p-values for hypothesis tests of variance components:
+##H0: theta <=0 vs H1: theta > 0
+p <- pnorm(fit$theta[k, ]/fit$se[k, ], lower.tail = F)
+sum(p <= 0.05, na.rm = T)
+
+
+##LMM tests
+##comparisons of mutant vs wildtype within a patient
+test <- lmmtest(fit)
+test <- test[, grep("mutant", colnames(test))]
+
+fileName <- "Data/model3_test.csv"
+write.csv(cbind(Gene = rownames(test), test), file = fileName, row.names = F)
+
+pv <- test[, grep("pvalue", colnames(test))]
+
+par(mfrow = c(2,2), mar = c(5.1, 4.1, 3.1, 1.1))
+for (i in 1:ncol(pv)) {
+	main <- gsub("_pvalue", "-wildtype", colnames(pv)[i])
+	qqpvalue(pv[,i], col = "blue", cex = 0.6, main = main, cex.main = 0.8)
+	}
+
+par(mfrow = c(2,2), mar = c(5.1, 4.1, 3.1, 1.1))
+for (i in 1:ncol(pv)) {
+	main <- gsub("_pvalue", "-wildtype", colnames(pv)[i])
+	hist(pv[,i], xlab = "p-values", col = "green", cex = 0.6, main = main, cex.main = 0.8)
+	}
+
+```
+
+# Conclusions
+
+* The variance components are not significant in each model. It is not needed to fit the data using patient as a random effect.
+* The patient causes a batch effect. 
+* Model-I ignores the batch effect and then results in p-value inflation. 
+* Model-II has a good calibration of p-value after adjusting the batch effect. There are no differentially expressed genes at level of FDR = 0.05.
+* Model-III shows that there are differentially expressed genes in a specified patient. The histograms of p-values show that there is a little bit deflation of p-values in patients: MM2129 and R544stop.
+
