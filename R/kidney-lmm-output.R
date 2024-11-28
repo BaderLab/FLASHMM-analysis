@@ -2,7 +2,10 @@
 ##########
 ##lmm
 
-load(paste0(dirOut, "/kidney-counts-lmm.RData"))
+dirOut = '~/FLASH-MM/Results_data/'
+#load(paste0(dirOut, "/kidney-counts-lmm.RData"))
+load(paste0(dirOut, "/kidney-counts-lmm.beta.RData"))
+
 
 rtlmm; max.iter; epsilon
 

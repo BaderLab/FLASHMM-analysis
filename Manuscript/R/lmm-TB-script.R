@@ -286,7 +286,7 @@ fit <- lmm(XX, XY, ZX, ZY, ZZ, Ynorm = Ynorm, n = n, d = d, max.iter = max.iter,
 
 ##design matrices
 ##load meta data
-load(file = paste0("scData/Nathan_NatImm_coldata.RData")
+load(file = paste0("scData/Nathan_NatImm_coldata.RData"))
 
 ##Relabel the batches as a charactor instead of an integer.
 if (length(grep("batch", coldata$batch)) == 0) coldata$batch <- paste0("batch", coldata$batch)

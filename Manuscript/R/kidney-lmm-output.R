@@ -13,7 +13,6 @@ sum(fit$niter >= max.iter)
 
 ##fixed effects
 felmm <- t(fit$coef)
-
 ##variance components
 slmm <- t(fit$theta)
 ##negative variance components
