@@ -5,6 +5,7 @@ library(stats)
 library(ggpubr)
 library(viridis)
 library(scales)
+library(gprofiler2)
 
 c25 <- c(
   "dodgerblue2", "#E31A1C", # red
@@ -22,6 +23,21 @@ c25 <- c(
   "darkorange4", "brown"
 )
 
+get_gprofiler_enrich <- function(markers, model_animal_name){
+  gostres <- gost(query = markers,
+                  ordered_query = TRUE, exclude_iea =TRUE, 
+                  sources=c('GO:BP' ,'REAC', 'GO:MF', 'GO:CC', 'KEGG', 'CORUM', 'HP', 'WP'), #'TF',
+                  organism = model_animal_name)
+  return(gostres)
+}
+
+model_animal_name ='hsapiens'
+head(PT_male_df_sort,30)
+num_genes = 200
+
+########################################################
+############## data exploration and visualization
+########################################################
 umap_coord = read.table('~/scLMM/LMM-scRNAseq/Data/kidney_atlas/UMAP.coords.tsv.gz')
 cell_meta = read.csv('~/scLMM/LMM-scRNAseq/Data/kidney_atlas/meta.tsv', sep = '\t')
 
@@ -43,9 +59,6 @@ ggplot(cell_meta, aes(x=V2, y=V3, color=a_cell_type))+geom_point(alpha=0.4, size
   theme(text = element_text(size=16),legend.title = element_blank())#
 
 
-
-# Create a more muted color palette
-library(scales)  # For muted color generation
 unique_cell_types <- unique(cell_meta$Cell_Types_Broad)  # Get unique cell types
 new_palette <- setNames(
   muted(rainbow(length(unique_cell_types)), l = 94, c = 30),  # More muted colors
@@ -61,7 +74,6 @@ ggplot(cell_meta, aes(x=V2, y=V3, color=Cell_Types_Broad)) +
   xlab('UMAP 1') +
   ylab('UMAP 2') +
   theme(text = element_text(size=17), legend.title = element_blank())
-
 
 
 df = data.frame(table(cell_meta$Cell_Types_Broad))
@@ -101,6 +113,7 @@ source("~/FLASH-MM/R/lmmfit.nt.R")
 source("~/FLASH-MM/R/lmmfitSS.R")
 source("~/FLASH-MM/R/lmmtest.R")
 source("~/FLASH-MM/R/qqpvalue.R")
+
 ######### importing kidney data  
 #load('LMM-scRNAseq-jan2024/Kidney_reanalysis_CC/data/kidney-counts-lmmfit.RData')
 load("~/FLASH-MM/Results_data//kidney-counts-lmm.beta.RData")
@@ -120,15 +133,9 @@ slmm <- fit$theta
 #test <- lmmtest(fit) ##t-values
 #tvlmm <- test[, grep("_t", colnames(test)), drop = F]
 
-pvlmm_adj = sapply(1:ncol(pvlmm), function(i)p.adjust(pvlmm[,i], method = "fdr"))
-colnames(pvlmm_adj) = colnames(pvlmm)
-colnames(felmm) == colnames(pvlmm)
-sum(apply(is.na(pvlmm), 1, any))
-dim(pvlmm)
-dim(felmm)
+
 ##p-values
 #plmm <- test[, grep("_pvalue", colnames(test)), drop = F]
-head(pvlmm)
 hist(pvlmm)
 pvalues_df=data.frame(pvalues=as.vector(pvlmm))
 # basic histogram
@@ -139,6 +146,14 @@ ggplot(pvalues_df, aes(x=pvalues))+
         axis.text.x = element_text(size=15,color='black'),
         legend.title = element_blank()) 
 
+
+pvlmm_adj = sapply(1:ncol(pvlmm), function(i)p.adjust(pvlmm[,i], method = "fdr"))
+colnames(pvlmm_adj) = colnames(pvlmm)
+colnames(felmm) == colnames(pvlmm)
+sum(apply(is.na(pvlmm), 1, any))
+dim(pvlmm)
+dim(felmm)
+
 #### counts extracted from data object shared via paper 
 dirData = '~/scLMM/LMM-scRNAseq/Data/kidney_atlas/'
 datafile <- paste0(dirData, "/Human_Kidney_data.rds")
@@ -146,54 +161,11 @@ data = readRDS(file = datafile)
 coldata = data@meta.data
 Idents(data) = data$Cell_Types_Broad
 
-
+                                      
 ########################################################
 ############## cell type marker identification ##########
 ########################################################
-
-P_VAL_THR = 0.05
-COEF_THR = 0.5
-
-markers_list = list()
-for(i in 3:19){
-  df = data.frame(genes=rownames(pvlmm_adj),
-                  tvalue=tvlmm[,i],
-                  pvalue=pvlmm[,i],
-                  coef = felmm[,i],
-                  pvalue_adj=pvlmm_adj[,i],
-                  score = -log(pvlmm_adj[,i]+1e-20)*felmm[,i])
-  df_ord = df[order(df$score, decreasing = TRUE),]
-  df_ord$is_sig = df_ord$pvalue_adj<P_VAL_THR & (df_ord$coef > COEF_THR | df_ord$coef < -COEF_THR)
-  markers_list[[colnames(pvlmm)[i]]] = df_ord
-}
-res= lapply(markers_list, function(x) sum(x$is_sig))
-res= data.frame(numDEG=t(data.frame(res)))
-res$cellType= rownames(res)
-res=res[order(res$numDEG, decreasing = T),]
-res
-
-
-lapply(markers_list, head)
-lapply(markers_list, function(x) sum(x$is_sig))
-top_marker_genes = lapply(markers_list, function(x) rownames(x)[1:4])
-
-
-### identifying top genes
-all_markers_list = lapply(markers_list, function(x) rownames(x)[1:30])
-pool_rep_genes = table(unlist(all_markers_list))>3 ### TRUE: rep
-pool_rep_genes = names(pool_rep_genes)[pool_rep_genes] ### selecting genes which are repeated
-
-#all_markers_list = unlist(lapply(markers_list, function(x) rownames(x)[1:20]))
-all_markers_vec = unlist(all_markers_list)
-all_markers_vec = all_markers_vec[!all_markers_vec %in% pool_rep_genes]
-all_markers_vec = all_markers_vec[all_markers_vec %in% unique(unlist(top_marker_genes))]
-
-
-                                        
-                                
-########################################################
-############## cell type marker identification ##########
-########################################################
+COEF_THR = 0.2
 cov_marker_list = list()
 for(i in 20:ncol(pvlmm_adj)){
   df = data.frame(genes=rownames(pvlmm_adj),
@@ -222,8 +194,8 @@ PT_male_df = data.frame(pvalue=pvlmm[,col_name],
                         tvalue = tvlmm[,col_name],
                         coef = felmm[,col_name],
                         gene=rownames(pvlmm))
+
 PT_male_df$pvalue_adj_log = -log(PT_male_df$pvalue_adj+1e-800)
-head(PT_male_df)
 hist(PT_male_df$tvalue+1e-10)
 hist(PT_male_df$coef)
 hist(PT_male_df$pvalue)
@@ -236,11 +208,10 @@ PT_male_df[PT_male_df$pvalue_adj<P_VAL_THR & (PT_male_df$coef > COEF_THR | PT_ma
 
 
 data_sub = data[,data$Cell_Types_Broad %in% cell_type_name]
-table(data$sex)
 
 PT_male_df$score = -log(PT_male_df$pvalue_adj+1e-600)*PT_male_df$coef
 PT_male_df_ord = PT_male_df[order(PT_male_df$score, decreasing = TRUE),]
-head(PT_male_df_ord)
+
 for(i in 1:10){
   gene_name = PT_male_df_ord$gene[i]
   gene_name
@@ -281,23 +252,9 @@ ggplot(PT_female_df_sort_m, aes(y=gene, x=score,color=pvalue_adj_log))+
 
 
 
-
-library(gprofiler2)
-library(ggplot2)
-
-get_gprofiler_enrich <- function(markers, model_animal_name){
-  gostres <- gost(query = markers,
-                  ordered_query = TRUE, exclude_iea =TRUE, 
-                  sources=c('GO:BP' ,'REAC', 'GO:MF', 'GO:CC', 'KEGG', 'CORUM', 'HP', 'WP'), #'TF',
-                  organism = model_animal_name)
-  return(gostres)
-}
-
-model_animal_name ='hsapiens'
-head(PT_male_df_sort,30)
-num_genes = 200
-
 ################################
+#### Pathway analysis 
+############################
 enrich_res_male = get_gprofiler_enrich(markers=PT_male_df_sort$gene[1:num_genes], model_animal_name)
 enrich_res_female = get_gprofiler_enrich(markers=PT_female_df_sort$gene[1:num_genes], model_animal_name)
 
@@ -321,7 +278,6 @@ enrich_res_pos = data.frame(enrich_res$result)
 enrich_res_pos = enrich_res_pos[,!colnames(enrich_res_pos)%in%'evidence_codes']
 enrich_res_pos$log_p = -log(as.numeric(enrich_res_pos$p_value))
 enrich_res_pos = enrich_res_pos[order(enrich_res_pos$log_p, decreasing = T),]
-#View(data.frame(1:nrow(enrich_res_pos),enrich_res_pos$term_name, enrich_res_pos$intersection))
 
 enrich_res_pos_vis = enrich_res_pos
 enrich_res_pos = enrich_res_pos[,colnames(enrich_res_pos) %in% c('term_name', 'log_p')]
@@ -329,7 +285,6 @@ enrich_res_pos$term_name = gsub('metabolic process', 'metabolism',enrich_res_pos
 enrich_res_pos_vis  = enrich_res_pos[!1:nrow(enrich_res_pos) %in% c(2,10,16:20),]
 rownames(enrich_res_pos_vis) = NULL
 enrich_res_pos_vis$term_name[12] = 'Transport of ions and amino acids'
-
 
 enrich_res_pos_vis$term_name <- factor(enrich_res_pos_vis$term_name, 
                                    levels =  enrich_res_pos_vis$term_name[length(enrich_res_pos_vis$term_name):1])

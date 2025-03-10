@@ -26,7 +26,6 @@ ggplot(diff_df, aes(y=diff, x=labels)) +
 
 
 
-
 rtime = readRDS('./rtime_table_mainfig_2b.rds')
 rtime_df = reshape2::melt(rtime)
 colnames(rtime_df) = c('model', 'num_cell', 'time')

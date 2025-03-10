@@ -1,5 +1,4 @@
 ##################################################
-
 source("R/qqpvalue.R")
 source("/R/AUC.R")
 source("/R/save.figure.R")
@@ -346,9 +345,9 @@ anbn <- c(anbn, list(auc))
 rm(auc)
 }##Nc
 
-	figFile <- paste0(dirFig, "/simuNBMM", direct, snm, "_qqplot_null")
-	save.figure(figFile, "png", widthscale = scaFig, heightscale = scaFig, res = resFig)
-	save.figure(figFile, "pdf", widthscale = scaFig, heightscale = scaFig, res = resFig)
+figFile <- paste0(dirFig, "/simuNBMM", direct, snm, "_qqplot_null")
+save.figure(figFile, "png", widthscale = scaFig, heightscale = scaFig, res = resFig)
+save.figure(figFile, "pdf", widthscale = scaFig, heightscale = scaFig, res = resFig)
 
 
 dev.off()
@@ -396,17 +395,6 @@ rtime
 capt <- paste0("lmm, lmmSS, lmer and nebula computation time in ", 
 		tunits, " in different sample sizes $n$.")
 xtable(rtime, caption = capt, label = "tab:nbinomtime")
-
-\begin{tabular}{rrrrrrr}
-  \hline
- & n=20000 & n=40000 & n=60000 & n=80000 & n=100000 & n=120000 \\ 
-  \hline
-lmm & 0.34 & 0.31 & 0.29 & 0.29 & 0.30 & 0.29 \\ 
-  lmmfit & 0.46 & 0.51 & 0.67 & 0.67 & 0.88 & 1.04 \\ 
-  lmer & 25.15 & 49.70 & 74.90 & 94.02 & 122.44 & 149.12 \\ 
-  nebula & 39.71 & 86.45 & 140.95 & 205.98 & 274.87 & 331.89 \\ 
-   \hline
-\end{tabular}
 
 ##lmmfit and lmmSS
 tunits <- "minutes"

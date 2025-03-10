@@ -1,12 +1,8 @@
 
-
-##################################################
 ##load data
 #datafile <- "scData/Human_Kidney_data.rds"
 datafile <- "scData/Kidney_raw_counts_decontaminated.rds"
 dat <- readRDS(file = datafile)
-#str(dat)
-
 #counts <- GetAssayData(object = dat, slot = "counts")
 counts <- GetAssayData(dat, layer = 'counts', assay = 'RNA')
 
@@ -14,7 +10,6 @@ dim(counts)
 #[1] 22484 27677
 max(counts)
 #[1] 25332.21
-
 #####
 coldata <- dat@meta.data
 dim(coldata)
@@ -22,41 +17,19 @@ head(coldata)
 all(rownames(coldata) == colnames(counts))
 #[1] TRUE
 
-
 ##'sampleID': unique sample identifiers
 ##'Cell_Types_Broad': subpopulation (cell cluster) assignments 
 ##'sex': make vs female experimental group/condition (control/treatment, healthy/diseased)
-
 table(coldata$sampleID)
-
-CD45_1 CD45_10  CD45_2  CD45_3  CD45_4  CD45_5  CD45_6  CD45_7  CD45_8  CD45_9 
-    584     714     315     938     126     344    1102    1182     553    1041 
- Total1  Total2  Total3  Total4  Total5  Total6  Total7  Total8  Total9 
-   1080    4738    2366    3739    3280     606    1811    1894    1264 
-
 table(coldata$sex)
 # Female   Male 
 # 15945  11732 
-table(coldata$sampletype)
-#  LD 
-#6899 
+
 sort(table(coldata$Cell_Types_Broad))
-
-       Podocyte        CCD-like             PEC          B cell              U2             DCT 
-             16              45              64              68             107             109 
-            CNT            IC-B       Mesangial              U1            IC-A              PC 
-            122             130             130             214             304             455 
-        NK cell     Endothelial          T cell             MNP        LOH-like            cTAL 
-            466             572             938             999            1011            1156 
-Proximal Tubule 
-          20771 
-         
-
 
 #####
 ##Filter cells
 ##by removing the cells beyond the extreme of lower and upper whisker.
-
 ##number of features
 nFeature <- colSums(counts > 0)
 minnFeature <- 100 
@@ -70,7 +43,6 @@ minnCellsType <- 20
 
 ##filtering
 all(colnames(counts) == rownames(coldata))
-
 j <- (nFeature >= minnFeature) & (libsize >= minlibsize) & (libsize <= maxlibsize)
 sum(j)
 #[1] 27566
@@ -88,9 +60,7 @@ sort(table(coldata$Cell_Types_Broad))
 
 ##########
 ##Filtering genes
-
 all(colnames(counts) == rownames(coldata))
-
 ##(1) number of celss
 #nCells <- rowSums(counts > 0)
 nCells <- rowSums(counts >= 1)
@@ -104,8 +74,7 @@ nCellsgrp <- do.call(cbind,
 		tapply(1:ncol(counts), as.factor(coldata$sex), 
 		function(j) rowSums(counts[, j, drop = F] >= 1))
 		#function(j) rowSums(counts[, j, drop = F] > 0))
-		)
-
+)
 dim(nCellsgrp)
 head(nCellsgrp)
 
@@ -131,7 +100,6 @@ range(cpc[cpc > 0])
 sum(cpc <= 0.005) 
 sum(cpc > 0.005) 
 
-
 ##Filtering
 minCells <- 16 
 minCellsgrp <- 10 
@@ -154,25 +122,88 @@ dim(coldata)
 all(colnames(counts) == rownames(coldata))
 ##################################################
 
+################################################
+############ FLASH-MM lmmfit
+################################################
+Y <- round(counts)
+dim(Y)
 
+##log library size
+loglib <- log(colSums(Y))
+
+#####
+##log-transformation
+##log2(1 + counts)
+##Y = log2(1+Y) 
+##by grouping to reduce data size
+ngrp <- 6
+sizegrp <- round(nrow(Y)/ngrp)
+if (ngrp*sizegrp < nrow(Y)) sizegrp <- round(nrow(Y)/ngrp) + 1
+for (i in 1:ngrp){
+  j <- (1+(i-1)*sizegrp):(min(nrow(Y), i*sizegrp))
+  print(range(j))
+  Y[j, ] <- log2(1 + Y[j, ])
+}
+
+#####
+X <- model.matrix(~ loglib + Cell_Types_Broad + Cell_Types_Broad:sex, data = coldata)
+dim(X)
+colnames(X) <- gsub("Cell_Types_Broad", "", colnames(X))
+colnames(X) <- gsub("sex", "", colnames(X))
+#colnames(X) <- gsub("Phase", "", colnames(X))
+colnames(X) <- gsub("\\+", "p", colnames(X))
+colnames(X) <- gsub("\\-", "_", colnames(X))
+colnames(X) <- gsub(" ", ".", colnames(X))
+
+##random effects
+##sample groups
+Z <- model.matrix(~ 0 + sampleID, data = coldata)
+colnames(Z) <- gsub(".*sampleID", "", colnames(Z))
+dim(Z)
+d <- ncol(Z)
+
+#####
+epsilon <- 1e-5
+max.iter <- 100
+
+t1 <- Sys.time()
+fit <- lmmfit(Y, X, Z, d=d, max.iter = max.iter, epsilon = epsilon)
+t2 <- Sys.time()
+difftime(t2, t1)
+
+rtlmm <- difftime(t2, t1, units = "secs")
+rtlmm
+#Time difference of 92.03347 secs
+save(fit, epsilon, max.iter, rtlmm, file = paste0(dirOut, "/kidney-counts-lmm.beta.RData"))
+table(fit$niter)
+
+#####
+##lmm
+n <- nrow(X)
+XY <- t(Y%*%X)
+ZX <- t(Z)%*%X #as.matrix(t(Z)%*%X)
+ZY <- t(Y%*%Z) #as.matrix(t(Z)%*%Y)
+ZZ <- t(Z)%*%Z #as.matrix(t(Z)%*%Z)
+
+#XXinv <- ginv(t(X)%*%X)
+XXinv <- chol2inv(chol(t(X)%*%X))
+Ynorm <- rowSums(Y*Y) 
+
+t1 <- Sys.time()
+fitss <- lmm(XY, ZX, ZY, ZZ = ZZ, XXinv = XXinv, Ynorm = Ynorm, 
+             n = n, d = d, max.iter = max.iter, epsilon = epsilon)
+t2 <- Sys.time()
+difftime(t2, t1)
+#Time difference of 1.111575 mins
+identical(fit, fitss)
 
 ##################################################
-#NEBULA
+
+##################################################
+##################### NEBULA
+##################################################
 ##https://github.com/lhe17/nebula
 ##Checking convergence for the summary statistics and quality control
-##  1: The convergence is reached due to a sufficiently small improvement of the function value.
-##-10: The convergence is reached because the gradients are close to zero 
-##     (i.e., the critical point) and no improvement of the function value can be found.
-##
-##Depending on the concrete application, 
-##the estimated gene-specific overdispersions can also be taken into consideration in quality control. 
-##For example, when testing differential expression for a variable, 
-##genes with a very large estimated cell-level overdispersion should be filtered out because such genes have huge unexplained noises.
-##
-##If the variable of interest is subject-level, 
-##genes with a very large subject-level overdispersion (>1) 
-##should be removed or interpreted cautiously as well.
-##
 ##The NBLMM is the same model as that adopted in the glmer.nb function in the lme4 R package, 
 ##but is computationally much more efficient by setting method='LN'. 
 
@@ -183,8 +214,6 @@ table(Y[1,])
 ##log library size
 loglib <- log(colSums(Y))
 #hist(loglib)
-
-##
 rm(counts)
 
 ##nebula
@@ -195,22 +224,18 @@ dim(X)
 colnames(X) <- gsub("Cell_Types_Broad", "", colnames(X))
 colnames(X) <- gsub("sex", "", colnames(X))
 #colnames(X) <- gsub("Phase", "", colnames(X))
-
 colnames(X) <- gsub("\\+", "p", colnames(X))
 colnames(X) <- gsub("\\-", "_", colnames(X))
 colnames(X) <- gsub(" ", ".", colnames(X))
-
 
 Z <- coldata$sampleID
 table(Z)
 length(Z) 
 
-
 ##model:
 ##NBGMM' is for fitting a negative binomial gamma mixed model. 
 ##'PMM' is for fitting a Poisson gamma mixed model. 
 ##'NBLMM' is for fitting a negative binomial lognormal mixed model (the same model as that in the lme4 package).
-
 #model <- "NBLMM"
 model <- "NBGMM"
 
@@ -232,97 +257,10 @@ negbn <- nebula(count = Y[, o], id = as.factor(Z[o]), pred = X[o, ],
 table(negbn$convergence) 
           
 # 1:   The convergence is reached due to a sufficiently small improvement of the function value.
-#-10: The convergence is reached because the gradients are close to zero (i.e., the critical point) and no improvement of the function value can be found.
+# -10: The convergence is reached because the gradients are close to zero (i.e., the critical point) and no improvement of the function value can be found.
 # -25: The Hessian matrix is either almost singular or not positive definite.
 # -30: The convergence fails because the likelihood function returns NaN.
 # -40: The convergence fails because the critical point is not reached and no improvement of the function value can be found.
-
-##################################################
-
-
-##################################################
-##lmmfit
-Y <- round(counts)
-dim(Y)
-
-##log library size
-loglib <- log(colSums(Y))
-
-#####
-##log-transformation
-##log2(1 + counts)
-##Y = log2(1+Y) 
-##by groupping to reduce data size
-ngrp <- 6
-sizegrp <- round(nrow(Y)/ngrp)
-if (ngrp*sizegrp < nrow(Y)) sizegrp <- round(nrow(Y)/ngrp) + 1
-for (i in 1:ngrp){
-  j <- (1+(i-1)*sizegrp):(min(nrow(Y), i*sizegrp))
-  print(range(j))
-  Y[j, ] <- log2(1 + Y[j, ])
-}
-
-
-#####
-X <- model.matrix(~ loglib + Cell_Types_Broad + Cell_Types_Broad:sex, data = coldata)
-
-dim(X)
-
-colnames(X) <- gsub("Cell_Types_Broad", "", colnames(X))
-colnames(X) <- gsub("sex", "", colnames(X))
-#colnames(X) <- gsub("Phase", "", colnames(X))
-colnames(X) <- gsub("\\+", "p", colnames(X))
-colnames(X) <- gsub("\\-", "_", colnames(X))
-colnames(X) <- gsub(" ", ".", colnames(X))
-
-##random effects
-##sample groups
-Z <- model.matrix(~ 0 + sampleID, data = coldata)
-colnames(Z) <- gsub(".*sampleID", "", colnames(Z))
-dim(Z)
-
-d <- ncol(Z)
-
-#####
-epsilon <- 1e-5
-max.iter <- 100
-
-t1 <- Sys.time()
-fit <- lmmfit(Y, X, Z, d=d, max.iter = max.iter, epsilon = epsilon)
-	t2 <- Sys.time()
-	difftime(t2, t1)
-
-	rtlmm <- difftime(t2, t1, units = "secs")
-	rtlmm
-	#Time difference of 92.03347 secs
-	save(fit, epsilon, max.iter, rtlmm, file = paste0(dirOut, "/kidney-counts-lmm.beta.RData"))
-		
-table(fit$niter)
-
-#####
-##lmm
-
-n <- nrow(X)
-XY <- t(Y%*%X)
-ZX <- t(Z)%*%X #as.matrix(t(Z)%*%X)
-ZY <- t(Y%*%Z) #as.matrix(t(Z)%*%Y)
-ZZ <- t(Z)%*%Z #as.matrix(t(Z)%*%Z)
-
-#XXinv <- ginv(t(X)%*%X)
-XXinv <- chol2inv(chol(t(X)%*%X))
-Ynorm <- rowSums(Y*Y) 
-
-t1 <- Sys.time()
-fitss <- lmm(XY, ZX, ZY, ZZ = ZZ, XXinv = XXinv, Ynorm = Ynorm, 
-		n = n, d = d, max.iter = max.iter, epsilon = epsilon)
-	t2 <- Sys.time()
-	difftime(t2, t1)
-	#Time difference of 1.111575 mins
-
-identical(fit, fitss)
-
-##################################################
-
 
 
 ##################################################
@@ -349,37 +287,34 @@ singlme <- NULL
 
 for (j in 1:nrow(Y)){
 
-##the observations
-dat$y <- Y[j, ]
-
-##lmer with default setting
-##LMM fitting: lme4::lmer 
-t1 <- Sys.time()
-lmerFit <- lme4::lmer(modelformula, data = dat)
-#lmerFit <- lme4::lmer(modelformula, data = dat, control = control)
+  ##the observations
+  dat$y <- Y[j, ]
+  ##lmer with default setting
+  ##LMM fitting: lme4::lmer 
+  t1 <- Sys.time()
+  lmerFit <- lme4::lmer(modelformula, data = dat)
+  #lmerFit <- lme4::lmer(modelformula, data = dat, control = control)
 	t2 <- Sys.time()
 	rtlme <- rtlme + difftime(t2, t1, units = timeUnits) 
 	rm(t1, t2)
-
-convlme <- c(convlme, lmerFit@optinfo$conv$opt)
-#convlme <- c(convlme, length(lmerFit@optinfo$conv$lme4))
-singlme <- c(singlme, isSingular(lmerFit))
-
-sfit <- summary(lmerFit)$coefficients
-felme <- cbind(felme, sfit[, "Estimate"])
-tvlme <- cbind(tvlme, sfit[, "t value"])
-slme <- cbind(slme, as.data.frame(VarCorr(lmerFit))$vcov)
-
-##LMM testing: lmerTest::lmer
-#lmerFit <- lmerTest::lmer(modelformula, data = dat)
-#lmerFit <- lmerTest::lmer(modelformula, data = dat, control = control)
-#sfit <- summary(lmerFit)$coefficients
-#plme <- cbind(plme, sfit[, "Pr(>|t|)"])
-
-#rm(sfit, lmerFit)
+  
+  convlme <- c(convlme, lmerFit@optinfo$conv$opt)
+  #convlme <- c(convlme, length(lmerFit@optinfo$conv$lme4))
+  singlme <- c(singlme, isSingular(lmerFit))
+  
+  sfit <- summary(lmerFit)$coefficients
+  felme <- cbind(felme, sfit[, "Estimate"])
+  tvlme <- cbind(tvlme, sfit[, "t value"])
+  slme <- cbind(slme, as.data.frame(VarCorr(lmerFit))$vcov)
+  
+  ##LMM testing: lmerTest::lmer
+  #lmerFit <- lmerTest::lmer(modelformula, data = dat)
+  #lmerFit <- lmerTest::lmer(modelformula, data = dat, control = control)
+  #sfit <- summary(lmerFit)$coefficients
+  #plme <- cbind(plme, sfit[, "Pr(>|t|)"])
+  #rm(sfit, lmerFit)
 }
 
-##
 colnames(felme) <- colnames(Y)
 colnames(tvlme) <- colnames(Y)
 colnames(plme) <- colnames(Y)
@@ -388,22 +323,15 @@ colnames(slme) <- colnames(Y)
 save(felme, tvlme, plme, slme, rtlme, convlme, singlme, 
 	file = paste0(dirOut, "/kidney-counts_lmer_default.RData"))
 
-##
 rtlme
 #Time difference of 7166.913 secs
-
 ##################################################
 
-
-
-
-##################################################
-##comparison of results
-
-##########
-##lmmfit
+###################################################
+##################### comparison of results
+###################################################
+######## lmmfit
 load(paste0(dirOut, "/kidney-counts-lmm.beta.RData"))
-
 rtlmm; max.iter; epsilon
 
 ##convergence
@@ -434,8 +362,7 @@ sum(is.na(tvlmm))
 #[1] 28
 sum(apply(is.na(tvlmm), 1, any))
 #[1] 19
-tvlmm[apply(is.na(tvlmm), 1, any), ]
-
+tvlmm[apply(is.na(tvlmm), 1, any),]
 
 ##p-values
 #pvlmm <- test[, grep("_pvalue", colnames(test)), drop = F]
@@ -450,12 +377,8 @@ head(pvlmm)
 load(file = paste0(dirOut, "/kidney-counts_lmer_default.RData"))
 
 rtlmm
-Time difference of 92.03347 secs
 rtlme
-Time difference of 7166.913 secs
 rtlme[[1]]/rtlmm[[1]]
-[1] 77.87289
-
 
 ##the genes that 
 ##(1) lmer fitting is not boundary (singular).
@@ -482,7 +405,6 @@ sum(ipos)
 #[1] 14106
 sum(ipos & iconv)
 
-
 ##
 i <- (iconv & ipos)
 sum(i)
@@ -504,7 +426,6 @@ d <- list('Coefficients' = c(t(felmm[i,]) - felme[, i]),
 	'Variance components' = c(t(slmm[i, ]) - slme[, i]))
 boxplot(d, ylab = "Differences between lmm and lmer", cex.axis = 0.9, cex.lab = 0.9)
 	
-
 ##########
 ##nebula
 #load(paste0(dirOut, "/kidney-counts-nebula.NBLMM.RData"))
@@ -515,11 +436,8 @@ load(paste0(dirOut, "/kidney-counts-nebula.NBGMM.RData"))
 nbgmm <- negbn
 
 rtlmm
-Time difference of 92.03347 secs
 rtlme
-Time difference of 7166.913 secs
 rtlme[[1]]/rtlmm[[1]]
-[1] 77.87289
 
 rtlme[[1]]/rtlmm[[1]]
 #[1] 77.87289
@@ -530,7 +448,6 @@ rtnblmm[[1]]/rtlmm[[1]]
 
 ##lmm:
 #Time difference of 1.111575 mins
-
 #####
 rtime <- cbind("lmm" = 1.111575, "lmmfit" = 92.03347/60, "lmer" = 7166.913/60)
 rtime
@@ -658,55 +575,13 @@ hist(pv[i,j], xlab = "nebula p-values", main = "")
 sum(i)
 
 colSums(pvlmm[i,j] <= 0.05/sum(i))
-         B.cell:Male        CCD_like:Male             CNT:Male            cTAL:Male 
-                  48                   25                  646                  523 
-            DCT:Male     Endothelial:Male            IC_A:Male            IC_B:Male 
-                 119                  283                  235                  148 
-       LOH_like:Male       Mesangial:Male             MNP:Male         NK.cell:Male 
-                  10                  175                  522                   66 
-             PC:Male             PEC:Male Proximal.Tubule:Male          T.cell:Male 
-                 536                  255                   19                   58 
-             U1:Male              U2:Male 
-                 316                  203 
-
 colSums(pv[i,j] <= 0.05/sum(i))
-         p_B.cell:Male        p_CCD_like:Male             p_CNT:Male            p_cTAL:Male 
-                     1                      0                      1                     31 
-            p_DCT:Male     p_Endothelial:Male            p_IC_A:Male            p_IC_B:Male 
-                     1                     11                      4                      2 
-       p_LOH_like:Male       p_Mesangial:Male             p_MNP:Male         p_NK.cell:Male 
-                     3                      4                     38                      1 
-             p_PC:Male             p_PEC:Male p_Proximal.Tubule:Male          p_T.cell:Male 
-                    13                      0                     71                     11 
-             p_U1:Male              p_U2:Male 
-                     6                      6 
-
 ##effects
 i <- ipos
 colSums((pvlmm[i,j] <= 0.05/sum(i)) & (abs(felmm[i,j]) > 0.25))
-         B.cell:Male        CCD_like:Male             CNT:Male            cTAL:Male 
-                  31                   24                  456                   97 
-            DCT:Male     Endothelial:Male            IC_A:Male            IC_B:Male 
-                  42                   49                   87                   63 
-       LOH_like:Male       Mesangial:Male             MNP:Male         NK.cell:Male 
-                   2                   68                  192                   29 
-             PC:Male             PEC:Male Proximal.Tubule:Male          T.cell:Male 
-                 145                  153                    2                   13 
-             U1:Male              U2:Male 
-                 123                  117 
 
 i <- iGenes
 colSums((pv[i,j] <= 0.05/sum(i)) & (abs(b[i,j]) > 0.25))
-         p_B.cell:Male        p_CCD_like:Male             p_CNT:Male            p_cTAL:Male 
-                     1                      0                      1                     31 
-            p_DCT:Male     p_Endothelial:Male            p_IC_A:Male            p_IC_B:Male 
-                     1                     11                      4                      2 
-       p_LOH_like:Male       p_Mesangial:Male             p_MNP:Male         p_NK.cell:Male 
-                     3                      4                     38                      1 
-             p_PC:Male             p_PEC:Male p_Proximal.Tubule:Male          p_T.cell:Male 
-                    13                      0                     71                     11 
-             p_U1:Male              p_U2:Male 
-                     6                      6 
 
 
 #####
@@ -715,56 +590,14 @@ colSums((pv[i,j] <= 0.05/sum(i)) & (abs(b[i,j]) > 0.25))
 i <- ipos
 fdr <- apply(pvlmm[i, j], 2, p.adjust, method = "BH")
 colSums((fdr <= 0.05) & (abs(felmm[i,j]) > 0.25))
-         B.cell:Male        CCD_like:Male             CNT:Male            cTAL:Male 
-                  69                   68                 1391                  131 
-            DCT:Male     Endothelial:Male            IC_A:Male            IC_B:Male 
-                 147                   79                  147                  149 
-       LOH_like:Male       Mesangial:Male             MNP:Male         NK.cell:Male 
-                   2                  103                  272                   36 
-             PC:Male             PEC:Male Proximal.Tubule:Male          T.cell:Male 
-                 239                  448                   10                   19 
-             U1:Male              U2:Male 
-                 326                  264 
 colSums((fdr <= 0.05) & (abs(felmm[i,j]) > 0.5))
-         B.cell:Male        CCD_like:Male             CNT:Male            cTAL:Male 
-                  20                   19                  200                   20 
-            DCT:Male     Endothelial:Male            IC_A:Male            IC_B:Male 
-                   9                    8                   10                   14 
-       LOH_like:Male       Mesangial:Male             MNP:Male         NK.cell:Male 
-                   0                   18                   59                    5 
-             PC:Male             PEC:Male Proximal.Tubule:Male          T.cell:Male 
-                  31                   53                    4                    5 
-             U1:Male              U2:Male 
-                  46                   62 
-                  
 colSums((fdr <= 0.05) & (abs(felmm[i,j]) >= 1))
 
 ##
 i <- iGenes
 fdr <- apply(pv[i, j], 2, p.adjust, method = "BH")
 colSums((fdr <= 0.05) & (abs(b[i,j]) > 0.25))
-         p_B.cell:Male        p_CCD_like:Male             p_CNT:Male            p_cTAL:Male 
-                     1                      0                      1                     90 
-            p_DCT:Male     p_Endothelial:Male            p_IC_A:Male            p_IC_B:Male 
-                     1                     36                      4                      5 
-       p_LOH_like:Male       p_Mesangial:Male             p_MNP:Male         p_NK.cell:Male 
-                     5                      7                    166                      1 
-             p_PC:Male             p_PEC:Male p_Proximal.Tubule:Male          p_T.cell:Male 
-                    28                      0                    428                     36 
-             p_U1:Male              p_U2:Male 
-                    12                      7 
 colSums((fdr <= 0.05) & (abs(b[i,j]) > 0.5))
-         p_B.cell:Male        p_CCD_like:Male             p_CNT:Male            p_cTAL:Male 
-                     1                      0                      1                     79 
-            p_DCT:Male     p_Endothelial:Male            p_IC_A:Male            p_IC_B:Male 
-                     1                     34                      4                      5 
-       p_LOH_like:Male       p_Mesangial:Male             p_MNP:Male         p_NK.cell:Male 
-                     5                      7                    140                      1 
-             p_PC:Male             p_PEC:Male p_Proximal.Tubule:Male          p_T.cell:Male 
-                    25                      0                    261                     34 
-             p_U1:Male              p_U2:Male 
-                    11                      7 
-                    
                     
                     
 #####
@@ -805,7 +638,6 @@ indx <- matrix(0, nrow = length(glist), ncol = 2)
 	vennDiagram(cgset, counts.col = "blue", cex = c(0.9, 0.9, 0.8), lwd = 1.5)
 	##vennDiagram(cgset, counts.col = "blue", cex = c(0.9, 0.9, 0.8), lwd = 1.5, mar = rep(0, 4))
 	#mtext(main, line = -5)
-
 
 ##################################################
 
